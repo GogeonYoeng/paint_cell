@@ -1,0 +1,90 @@
+joint_csv_dir=/home/airo/paint_cell_ws/nlp4cm/stitched/NX350h_right_fender_flat_tool
+[activate_env] paintcell(conda) + ROS2 Humble 활성화 완료 (python: /home/airo/anaconda3/envs/paintcell/bin/python)
+[INFO] [launch]: All log files can be found below /home/airo/.ros/log/2026-09-02-05-28-20-426359-airo-921429
+[INFO] [launch]: Default logging verbosity is set to INFO
+[INFO] [static_transform_publisher-1]: process started with pid [921569]
+[INFO] [static_transform_publisher-2]: process started with pid [921571]
+[INFO] [robot_state_publisher-3]: process started with pid [921573]
+[INFO] [scene_publisher-4]: process started with pid [921575]
+[INFO] [trajectory_player-5]: process started with pid [921577]
+[INFO] [rviz2-6]: process started with pid [921579]
+[static_transform_publisher-1] 1788294500.496970 [42] static_tra: selected interface "lo" is not multicast-capable: disabling multicast
+[static_transform_publisher-2] 1788294500.497704 [42] static_tra: selected interface "lo" is not multicast-capable: disabling multicast
+[rviz2-6] /opt/ros/humble/lib/rviz2/rviz2: /home/airo/anaconda3/envs/paintcell/lib/libcurl.so.4: no version information available (required by /opt/ros/humble/lib/libresource_retriever.so)
+[robot_state_publisher-3] 1788294500.499084 [42] robot_stat: selected interface "lo" is not multicast-capable: disabling multicast
+[static_transform_publisher-1] [INFO] [1788294500.500155094] [world_to_part]: Spinning until stopped - publishing transform
+[static_transform_publisher-1] translation: ('-0.966000', '-0.744000', '1.151000')
+[static_transform_publisher-1] rotation: ('0.707107', '0.000000', '0.000000', '0.707107')
+[static_transform_publisher-1] from 'world' to 'part'
+[static_transform_publisher-2] [INFO] [1788294500.501122989] [world_to_robot_root]: Spinning until stopped - publishing transform
+[static_transform_publisher-2] translation: ('0.000000', '0.000000', '0.000000')
+[static_transform_publisher-2] rotation: ('0.000000', '0.000000', '0.000000', '1.000000')
+[static_transform_publisher-2] from 'world' to 'world_base'
+[robot_state_publisher-3] [INFO] [1788294500.504401152] [robot_state_publisher]: got segment base_link
+[robot_state_publisher-3] [INFO] [1788294500.504447773] [robot_state_publisher]: got segment gantry_x_link
+[robot_state_publisher-3] [INFO] [1788294500.504453632] [robot_state_publisher]: got segment gantry_y_link
+[robot_state_publisher-3] [INFO] [1788294500.504457788] [robot_state_publisher]: got segment link_1
+[robot_state_publisher-3] [INFO] [1788294500.504461544] [robot_state_publisher]: got segment link_2
+[robot_state_publisher-3] [INFO] [1788294500.504465059] [robot_state_publisher]: got segment link_3
+[robot_state_publisher-3] [INFO] [1788294500.504468534] [robot_state_publisher]: got segment link_4
+[robot_state_publisher-3] [INFO] [1788294500.504471669] [robot_state_publisher]: got segment link_5
+[robot_state_publisher-3] [INFO] [1788294500.504474894] [robot_state_publisher]: got segment link_6
+[robot_state_publisher-3] [INFO] [1788294500.504478029] [robot_state_publisher]: got segment spray_gun
+[robot_state_publisher-3] [INFO] [1788294500.504481454] [robot_state_publisher]: got segment tool_assy
+[robot_state_publisher-3] [INFO] [1788294500.504484599] [robot_state_publisher]: got segment world_base
+[rviz2-6] 1788294500.592119 [42]      rviz2: selected interface "lo" is not multicast-capable: disabling multicast
+[scene_publisher-4] 1788294500.684872 [42] scene_publ: selected interface "lo" is not multicast-capable: disabling multicast
+[trajectory_player-5] 1788294500.692004 [42] trajectory: selected interface "lo" is not multicast-capable: disabling multicast
+[scene_publisher-4] [INFO] [1788294500.715871416] [scene_publisher]: 부품 점군 17956점 로드: NX350h_right_fender.ply
+[scene_publisher-4] [INFO] [1788294500.735858430] [scene_publisher]: 경로 19 row / 307 point 로드 (분사 ON 206점)
+[trajectory_player-5] [INFO] [1788294500.762037687] [trajectory_player]: joint 궤적 37개 재생 시작 (총 132.2s, speed_scale=8.0)
+[rviz2-6] [INFO] [1788294501.231028876] [rviz2]: Stereo is NOT SUPPORTED
+[rviz2-6] [INFO] [1788294501.231141117] [rviz2]: OpenGl version: 4.6 (GLSL 4.6)
+[rviz2-6] [INFO] [1788294501.323513438] [rviz2]: Stereo is NOT SUPPORTED
+[trajectory_player-5] [INFO] [1788294519.148543297] [trajectory_player]: 전체 경로 1회 완료 — 처음부터 반복
+[trajectory_player-5] [INFO] [1788294537.547869470] [trajectory_player]: 전체 경로 1회 완료 — 처음부터 반복
+[trajectory_player-5] [INFO] [1788294555.948264462] [trajectory_player]: 전체 경로 1회 완료 — 처음부터 반복
+[INFO] [rviz2-6]: process has finished cleanly [pid 921579]
+[trajectory_player-5] [INFO] [1788294574.347601011] [trajectory_player]: 전체 경로 1회 완료 — 처음부터 반복
+[trajectory_player-5] [INFO] [1788294592.748125584] [trajectory_player]: 전체 경로 1회 완료 — 처음부터 반복
+[trajectory_player-5] [INFO] [1788294611.148538300] [trajectory_player]: 전체 경로 1회 완료 — 처음부터 반복
+[trajectory_player-5] [INFO] [1788294629.548182392] [trajectory_player]: 전체 경로 1회 완료 — 처음부터 반복
+[trajectory_player-5] [INFO] [1788294647.948044073] [trajectory_player]: 전체 경로 1회 완료 — 처음부터 반복
+[trajectory_player-5] [INFO] [1788294666.347660321] [trajectory_player]: 전체 경로 1회 완료 — 처음부터 반복
+[trajectory_player-5] [INFO] [1788294684.748266597] [trajectory_player]: 전체 경로 1회 완료 — 처음부터 반복
+[trajectory_player-5] [INFO] [1788294703.147664684] [trajectory_player]: 전체 경로 1회 완료 — 처음부터 반복
+[trajectory_player-5] [INFO] [1788294721.547717606] [trajectory_player]: 전체 경로 1회 완료 — 처음부터 반복
+[trajectory_player-5] [INFO] [1788294739.947855176] [trajectory_player]: 전체 경로 1회 완료 — 처음부터 반복
+[trajectory_player-5] [INFO] [1788294758.347937975] [trajectory_player]: 전체 경로 1회 완료 — 처음부터 반복
+[trajectory_player-5] [INFO] [1788294776.748128020] [trajectory_player]: 전체 경로 1회 완료 — 처음부터 반복
+[trajectory_player-5] [INFO] [1788294795.147630441] [trajectory_player]: 전체 경로 1회 완료 — 처음부터 반복
+[trajectory_player-5] [INFO] [1788294813.548174578] [trajectory_player]: 전체 경로 1회 완료 — 처음부터 반복
+[scene_publisher-4] Traceback (most recent call last):
+[scene_publisher-4]   File "/home/airo/paint_cell_ws/install/paint_viz/lib/paint_viz/scene_publisher", line 33, in <module>
+[scene_publisher-4]     sys.exit(load_entry_point('paint-viz', 'console_scripts', 'scene_publisher')())
+[scene_publisher-4]   File "/home/airo/paint_cell_ws/build/paint_viz/paint_viz/scene_publisher.py", line 193, in main
+[scene_publisher-4]     rclpy.spin(node)
+[scene_publisher-4]   File "/opt/ros/humble/local/lib/python3.10/dist-packages/rclpy/__init__.py", line 229, in spin
+[scene_publisher-4]     executor.spin_once()
+[scene_publisher-4]   File "/opt/ros/humble/local/lib/python3.10/dist-packages/rclpy/executors.py", line 751, in spin_once
+[scene_publisher-4]     self._spin_once_impl(timeout_sec)
+[scene_publisher-4]   File "/opt/ros/humble/local/lib/python3.10/dist-packages/rclpy/executors.py", line 740, in _spin_once_impl
+[scene_publisher-4]     handler, entity, node = self.wait_for_ready_callbacks(timeout_sec=timeout_sec)
+[scene_publisher-4]   File "/opt/ros/humble/local/lib/python3.10/dist-packages/rclpy/executors.py", line 723, in wait_for_ready_callbacks
+[scene_publisher-4]     return next(self._cb_iter)
+[scene_publisher-4]   File "/opt/ros/humble/local/lib/python3.10/dist-packages/rclpy/executors.py", line 624, in _wait_for_ready_callbacks
+[scene_publisher-4]     raise ExternalShutdownException()
+[scene_publisher-4] rclpy.executors.ExternalShutdownException
+[ERROR] [scene_publisher-4]: process has died [pid 921575, exit code 1, cmd '/home/airo/paint_cell_ws/install/paint_viz/lib/paint_viz/scene_publisher --ros-args -r __node:=scene_publisher --params-file /tmp/launch_params_2ksr4yc3'].
+[trajectory_player-5] [INFO] [1788294831.948204960] [trajectory_player]: 전체 경로 1회 완료 — 처음부터 반복
+[trajectory_player-5] [INFO] [1788294850.348378458] [trajectory_player]: 전체 경로 1회 완료 — 처음부터 반복
+[trajectory_player-5] [INFO] [1788294868.747859801] [trajectory_player]: 전체 경로 1회 완료 — 처음부터 반복
+[trajectory_player-5] [INFO] [1788294887.147638373] [trajectory_player]: 전체 경로 1회 완료 — 처음부터 반복
+[robot_state_publisher-3] [INFO] [1788294895.718307911] [rclcpp]: signal_handler(signum=15)
+[INFO] [robot_state_publisher-3]: process has finished cleanly [pid 921573]
+[trajectory_player-5] [INFO] [1788294905.547646607] [trajectory_player]: 전체 경로 1회 완료 — 처음부터 반복
+[trajectory_player-5] [INFO] [1788294923.947854415] [trajectory_player]: 전체 경로 1회 완료 — 처음부터 반복
+[trajectory_player-5] [INFO] [1788294942.348344295] [trajectory_player]: 전체 경로 1회 완료 — 처음부터 반복
+[ERROR] [trajectory_player-5]: process has died [pid 921577, exit code -9, cmd '/home/airo/paint_cell_ws/install/paint_viz/lib/paint_viz/trajectory_player --ros-args -r __node:=trajectory_player --params-file /tmp/launch_params_itg48b1w'].
+[ERROR] [static_transform_publisher-1]: process has died [pid 921569, exit code -9, cmd '/opt/ros/humble/lib/tf2_ros/static_transform_publisher --x -0.966 --y -0.744 --z 1.151 --roll 1.5707963 --pitch 0.0 --yaw 0.0 --frame-id world --child-frame-id part --ros-args -r __node:=world_to_part'].
+[ERROR] [static_transform_publisher-2]: process has died [pid 921571, exit code -9, cmd '/opt/ros/humble/lib/tf2_ros/static_transform_publisher --x 0 --y 0 --z 0 --roll 0 --pitch 0 --yaw 0 --frame-id world --child-frame-id world_base --ros-args -r __node:=world_to_robot_root'].

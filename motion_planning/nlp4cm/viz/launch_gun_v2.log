@@ -1,0 +1,109 @@
+joint_csv_dir=/home/airo/paint_cell_ws/nlp4cm/stitched/NX350h_right_fender_flat
+[activate_env] paintcell(conda) + ROS2 Humble 활성화 완료 (python: /home/airo/anaconda3/envs/paintcell/bin/python)
+[INFO] [launch]: All log files can be found below /home/airo/.ros/log/2026-09-02-03-46-05-005886-airo-865255
+[INFO] [launch]: Default logging verbosity is set to INFO
+[INFO] [static_transform_publisher-1]: process started with pid [865390]
+[INFO] [static_transform_publisher-2]: process started with pid [865392]
+[INFO] [robot_state_publisher-3]: process started with pid [865394]
+[INFO] [scene_publisher-4]: process started with pid [865396]
+[INFO] [trajectory_player-5]: process started with pid [865398]
+[INFO] [rviz2-6]: process started with pid [865400]
+[static_transform_publisher-2] 1788288365.073285 [42] static_tra: selected interface "lo" is not multicast-capable: disabling multicast
+[static_transform_publisher-1] 1788288365.073296 [42] static_tra: selected interface "lo" is not multicast-capable: disabling multicast
+[rviz2-6] /opt/ros/humble/lib/rviz2/rviz2: /home/airo/anaconda3/envs/paintcell/lib/libcurl.so.4: no version information available (required by /opt/ros/humble/lib/libresource_retriever.so)
+[robot_state_publisher-3] 1788288365.075164 [42] robot_stat: selected interface "lo" is not multicast-capable: disabling multicast
+[static_transform_publisher-2] [INFO] [1788288365.076745604] [world_to_robot_root]: Spinning until stopped - publishing transform
+[static_transform_publisher-2] translation: ('0.000000', '0.000000', '0.000000')
+[static_transform_publisher-2] rotation: ('0.000000', '0.000000', '0.000000', '1.000000')
+[static_transform_publisher-2] from 'world' to 'world_base'
+[static_transform_publisher-1] [INFO] [1788288365.076961701] [world_to_part]: Spinning until stopped - publishing transform
+[static_transform_publisher-1] translation: ('-0.966000', '-0.744000', '1.151000')
+[static_transform_publisher-1] rotation: ('0.707107', '0.000000', '0.000000', '0.707107')
+[static_transform_publisher-1] from 'world' to 'part'
+[robot_state_publisher-3] [INFO] [1788288365.080442329] [robot_state_publisher]: got segment base_link
+[robot_state_publisher-3] [INFO] [1788288365.080485644] [robot_state_publisher]: got segment gantry_x_link
+[robot_state_publisher-3] [INFO] [1788288365.080491643] [robot_state_publisher]: got segment gantry_y_link
+[robot_state_publisher-3] [INFO] [1788288365.080495319] [robot_state_publisher]: got segment link_1
+[robot_state_publisher-3] [INFO] [1788288365.080498985] [robot_state_publisher]: got segment link_2
+[robot_state_publisher-3] [INFO] [1788288365.080502199] [robot_state_publisher]: got segment link_3
+[robot_state_publisher-3] [INFO] [1788288365.080505404] [robot_state_publisher]: got segment link_4
+[robot_state_publisher-3] [INFO] [1788288365.080508529] [robot_state_publisher]: got segment link_5
+[robot_state_publisher-3] [INFO] [1788288365.080511774] [robot_state_publisher]: got segment link_6
+[robot_state_publisher-3] [INFO] [1788288365.080514949] [robot_state_publisher]: got segment spray_gun
+[robot_state_publisher-3] [INFO] [1788288365.080518394] [robot_state_publisher]: got segment world_base
+[rviz2-6] 1788288365.144080 [42]      rviz2: selected interface "lo" is not multicast-capable: disabling multicast
+[scene_publisher-4] 1788288365.258278 [42] scene_publ: selected interface "lo" is not multicast-capable: disabling multicast
+[trajectory_player-5] 1788288365.258878 [42] trajectory: selected interface "lo" is not multicast-capable: disabling multicast
+[scene_publisher-4] [INFO] [1788288365.289527144] [scene_publisher]: 부품 점군 17956점 로드: NX350h_right_fender.ply
+[scene_publisher-4] [INFO] [1788288365.309509069] [scene_publisher]: 경로 19 row / 307 point 로드 (분사 ON 206점)
+[trajectory_player-5] [INFO] [1788288365.328886232] [trajectory_player]: joint 궤적 37개 재생 시작 (총 133.3s, speed_scale=8.0)
+[rviz2-6] [INFO] [1788288365.768117027] [rviz2]: Stereo is NOT SUPPORTED
+[rviz2-6] [INFO] [1788288365.768247214] [rviz2]: OpenGl version: 4.6 (GLSL 4.6)
+[rviz2-6] [INFO] [1788288365.795744092] [rviz2]: Stereo is NOT SUPPORTED
+[trajectory_player-5] [INFO] [1788288383.795471968] [trajectory_player]: 전체 경로 1회 완료 — 처음부터 반복
+[trajectory_player-5] [INFO] [1788288402.275217176] [trajectory_player]: 전체 경로 1회 완료 — 처음부터 반복
+[trajectory_player-5] [INFO] [1788288420.755445049] [trajectory_player]: 전체 경로 1회 완료 — 처음부터 반복
+[trajectory_player-5] [INFO] [1788288439.234967798] [trajectory_player]: 전체 경로 1회 완료 — 처음부터 반복
+[trajectory_player-5] [INFO] [1788288457.715150238] [trajectory_player]: 전체 경로 1회 완료 — 처음부터 반복
+[trajectory_player-5] [INFO] [1788288476.195400088] [trajectory_player]: 전체 경로 1회 완료 — 처음부터 반복
+[trajectory_player-5] [INFO] [1788288494.674731085] [trajectory_player]: 전체 경로 1회 완료 — 처음부터 반복
+[trajectory_player-5] [INFO] [1788288513.155217097] [trajectory_player]: 전체 경로 1회 완료 — 처음부터 반복
+[trajectory_player-5] [INFO] [1788288531.635307887] [trajectory_player]: 전체 경로 1회 완료 — 처음부터 반복
+[trajectory_player-5] [INFO] [1788288550.115369185] [trajectory_player]: 전체 경로 1회 완료 — 처음부터 반복
+[trajectory_player-5] [INFO] [1788288568.595519864] [trajectory_player]: 전체 경로 1회 완료 — 처음부터 반복
+[trajectory_player-5] [INFO] [1788288587.075110687] [trajectory_player]: 전체 경로 1회 완료 — 처음부터 반복
+[trajectory_player-5] [INFO] [1788288605.554982244] [trajectory_player]: 전체 경로 1회 완료 — 처음부터 반복
+[trajectory_player-5] [INFO] [1788288624.035314057] [trajectory_player]: 전체 경로 1회 완료 — 처음부터 반복
+[trajectory_player-5] [INFO] [1788288642.515280384] [trajectory_player]: 전체 경로 1회 완료 — 처음부터 반복
+[trajectory_player-5] [INFO] [1788288660.995249926] [trajectory_player]: 전체 경로 1회 완료 — 처음부터 반복
+[trajectory_player-5] [INFO] [1788288679.474804892] [trajectory_player]: 전체 경로 1회 완료 — 처음부터 반복
+[trajectory_player-5] [INFO] [1788288697.955345261] [trajectory_player]: 전체 경로 1회 완료 — 처음부터 반복
+[INFO] [rviz2-6]: process has finished cleanly [pid 865400]
+[trajectory_player-5] [INFO] [1788288716.435177707] [trajectory_player]: 전체 경로 1회 완료 — 처음부터 반복
+[trajectory_player-5] [INFO] [1788288734.914971457] [trajectory_player]: 전체 경로 1회 완료 — 처음부터 반복
+[trajectory_player-5] [INFO] [1788288753.394691868] [trajectory_player]: 전체 경로 1회 완료 — 처음부터 반복
+[trajectory_player-5] [INFO] [1788288771.875155717] [trajectory_player]: 전체 경로 1회 완료 — 처음부터 반복
+[trajectory_player-5] [INFO] [1788288790.354732461] [trajectory_player]: 전체 경로 1회 완료 — 처음부터 반복
+[trajectory_player-5] [INFO] [1788288808.834745686] [trajectory_player]: 전체 경로 1회 완료 — 처음부터 반복
+[trajectory_player-5] [INFO] [1788288827.315442545] [trajectory_player]: 전체 경로 1회 완료 — 처음부터 반복
+[trajectory_player-5] [INFO] [1788288845.794945274] [trajectory_player]: 전체 경로 1회 완료 — 처음부터 반복
+[trajectory_player-5] [INFO] [1788288864.274723358] [trajectory_player]: 전체 경로 1회 완료 — 처음부터 반복
+[trajectory_player-5] [INFO] [1788288882.755317907] [trajectory_player]: 전체 경로 1회 완료 — 처음부터 반복
+[trajectory_player-5] [INFO] [1788288901.234739517] [trajectory_player]: 전체 경로 1회 완료 — 처음부터 반복
+[trajectory_player-5] [INFO] [1788288919.715021331] [trajectory_player]: 전체 경로 1회 완료 — 처음부터 반복
+[trajectory_player-5] [INFO] [1788288938.194731897] [trajectory_player]: 전체 경로 1회 완료 — 처음부터 반복
+[trajectory_player-5] [INFO] [1788288956.674937881] [trajectory_player]: 전체 경로 1회 완료 — 처음부터 반복
+[trajectory_player-5] [INFO] [1788288975.155017501] [trajectory_player]: 전체 경로 1회 완료 — 처음부터 반복
+[trajectory_player-5] [INFO] [1788288993.634696965] [trajectory_player]: 전체 경로 1회 완료 — 처음부터 반복
+[trajectory_player-5] [INFO] [1788289012.114726651] [trajectory_player]: 전체 경로 1회 완료 — 처음부터 반복
+[trajectory_player-5] [INFO] [1788289030.595320557] [trajectory_player]: 전체 경로 1회 완료 — 처음부터 반복
+[trajectory_player-5] [INFO] [1788289049.075471626] [trajectory_player]: 전체 경로 1회 완료 — 처음부터 반복
+[trajectory_player-5] [INFO] [1788289067.555028996] [trajectory_player]: 전체 경로 1회 완료 — 처음부터 반복
+[trajectory_player-5] [INFO] [1788289086.035177418] [trajectory_player]: 전체 경로 1회 완료 — 처음부터 반복
+[trajectory_player-5] [INFO] [1788289104.515132856] [trajectory_player]: 전체 경로 1회 완료 — 처음부터 반복
+[trajectory_player-5] [INFO] [1788289122.994718069] [trajectory_player]: 전체 경로 1회 완료 — 처음부터 반복
+[trajectory_player-5] [INFO] [1788289141.475510769] [trajectory_player]: 전체 경로 1회 완료 — 처음부터 반복
+[trajectory_player-5] [INFO] [1788289159.955785626] [trajectory_player]: 전체 경로 1회 완료 — 처음부터 반복
+[trajectory_player-5] [INFO] [1788289178.435243600] [trajectory_player]: 전체 경로 1회 완료 — 처음부터 반복
+[trajectory_player-5] [INFO] [1788289196.915034917] [trajectory_player]: 전체 경로 1회 완료 — 처음부터 반복
+[trajectory_player-5] [INFO] [1788289215.395272514] [trajectory_player]: 전체 경로 1회 완료 — 처음부터 반복
+[trajectory_player-5] [INFO] [1788289233.874742247] [trajectory_player]: 전체 경로 1회 완료 — 처음부터 반복
+[trajectory_player-5] [INFO] [1788289252.355437112] [trajectory_player]: 전체 경로 1회 완료 — 처음부터 반복
+[trajectory_player-5] [INFO] [1788289270.834841898] [trajectory_player]: 전체 경로 1회 완료 — 처음부터 반복
+[trajectory_player-5] [INFO] [1788289289.314756169] [trajectory_player]: 전체 경로 1회 완료 — 처음부터 반복
+[trajectory_player-5] [INFO] [1788289307.794906129] [trajectory_player]: 전체 경로 1회 완료 — 처음부터 반복
+[trajectory_player-5] [INFO] [1788289326.275236014] [trajectory_player]: 전체 경로 1회 완료 — 처음부터 반복
+[WARNING] [launch]: user interrupted with ctrl-c (SIGINT)
+[INFO] [trajectory_player-5]: sending signal 'SIGINT' to process[trajectory_player-5]
+[INFO] [scene_publisher-4]: sending signal 'SIGINT' to process[scene_publisher-4]
+[INFO] [robot_state_publisher-3]: sending signal 'SIGINT' to process[robot_state_publisher-3]
+[INFO] [static_transform_publisher-2]: sending signal 'SIGINT' to process[static_transform_publisher-2]
+[INFO] [static_transform_publisher-1]: sending signal 'SIGINT' to process[static_transform_publisher-1]
+[robot_state_publisher-3] [INFO] [1788289339.573382894] [rclcpp]: signal_handler(signum=2)
+[static_transform_publisher-2] [INFO] [1788289339.574080360] [rclcpp]: signal_handler(signum=2)
+[static_transform_publisher-1] [INFO] [1788289339.574500126] [rclcpp]: signal_handler(signum=2)
+[INFO] [robot_state_publisher-3]: process has finished cleanly [pid 865394]
+[INFO] [static_transform_publisher-2]: process has finished cleanly [pid 865392]
+[INFO] [static_transform_publisher-1]: process has finished cleanly [pid 865390]
+[INFO] [scene_publisher-4]: process has finished cleanly [pid 865396]
+[INFO] [trajectory_player-5]: process has finished cleanly [pid 865398]

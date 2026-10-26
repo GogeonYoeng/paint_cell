@@ -1,0 +1,44 @@
+joint_csv_dir=/tmp/nlp4cm/stitched/ES300h_hood
+[activate_env] paintcell(conda) + ROS2 Humble 활성화 완료 (python: /home/airo/anaconda3/envs/paintcell/bin/python)
+[INFO] [launch]: All log files can be found below /home/airo/.ros/log/2026-08-31-12-07-18-221052-airo-59342
+[INFO] [launch]: Default logging verbosity is set to INFO
+[INFO] [static_transform_publisher-1]: process started with pid [59416]
+[INFO] [static_transform_publisher-2]: process started with pid [59418]
+[INFO] [robot_state_publisher-3]: process started with pid [59420]
+[INFO] [scene_publisher-4]: process started with pid [59422]
+[INFO] [trajectory_player-5]: process started with pid [59424]
+[INFO] [rviz2-6]: process started with pid [59426]
+[static_transform_publisher-1] 1788145638.289063 [42] static_tra: selected interface "lo" is not multicast-capable: disabling multicast
+[static_transform_publisher-2] 1788145638.289068 [42] static_tra: selected interface "lo" is not multicast-capable: disabling multicast
+[rviz2-6] /opt/ros/humble/lib/rviz2/rviz2: /home/airo/anaconda3/envs/paintcell/lib/libcurl.so.4: no version information available (required by /opt/ros/humble/lib/libresource_retriever.so)
+[robot_state_publisher-3] 1788145638.291165 [42] robot_stat: selected interface "lo" is not multicast-capable: disabling multicast
+[static_transform_publisher-2] [INFO] [1788145638.292594565] [world_to_robot_root]: Spinning until stopped - publishing transform
+[static_transform_publisher-2] translation: ('0.000000', '0.000000', '0.000000')
+[static_transform_publisher-2] rotation: ('0.000000', '0.000000', '0.000000', '1.000000')
+[static_transform_publisher-2] from 'world' to 'world_base'
+[static_transform_publisher-1] [INFO] [1788145638.292675398] [world_to_part]: Spinning until stopped - publishing transform
+[static_transform_publisher-1] translation: ('-0.751000', '-1.316000', '1.879000')
+[static_transform_publisher-1] rotation: ('0.000000', '0.000000', '0.000000', '1.000000')
+[static_transform_publisher-1] from 'world' to 'part'
+[robot_state_publisher-3] [INFO] [1788145638.296588232] [robot_state_publisher]: got segment base_link
+[robot_state_publisher-3] [INFO] [1788145638.296633090] [robot_state_publisher]: got segment gantry_x_link
+[robot_state_publisher-3] [INFO] [1788145638.296639089] [robot_state_publisher]: got segment gantry_y_link
+[robot_state_publisher-3] [INFO] [1788145638.296643075] [robot_state_publisher]: got segment link_1
+[robot_state_publisher-3] [INFO] [1788145638.296646831] [robot_state_publisher]: got segment link_2
+[robot_state_publisher-3] [INFO] [1788145638.296650036] [robot_state_publisher]: got segment link_3
+[robot_state_publisher-3] [INFO] [1788145638.296653211] [robot_state_publisher]: got segment link_4
+[robot_state_publisher-3] [INFO] [1788145638.296656415] [robot_state_publisher]: got segment link_5
+[robot_state_publisher-3] [INFO] [1788145638.296659690] [robot_state_publisher]: got segment link_6
+[robot_state_publisher-3] [INFO] [1788145638.296662995] [robot_state_publisher]: got segment world_base
+[rviz2-6] 1788145638.372630 [42]      rviz2: selected interface "lo" is not multicast-capable: disabling multicast
+[trajectory_player-5] 1788145638.475637 [42] trajectory: selected interface "lo" is not multicast-capable: disabling multicast
+[scene_publisher-4] 1788145638.479899 [42] scene_publ: selected interface "lo" is not multicast-capable: disabling multicast
+[scene_publisher-4] [INFO] [1788145638.512184302] [scene_publisher]: 부품 점군 76952점 로드: ES300h_hood.ply
+[trajectory_player-5] [INFO] [1788145638.555007309] [trajectory_player]: joint 궤적 63개 재생 시작 (총 450.7s, speed_scale=8.0)
+[scene_publisher-4] [INFO] [1788145638.587200204] [scene_publisher]: 경로 32 row / 1091 point 로드 (분사 ON 911점)
+[rviz2-6] [INFO] [1788145639.075555349] [rviz2]: Stereo is NOT SUPPORTED
+[rviz2-6] [INFO] [1788145639.075655721] [rviz2]: OpenGl version: 4.6 (GLSL 4.6)
+[rviz2-6] [INFO] [1788145639.178270961] [rviz2]: Stereo is NOT SUPPORTED
+[trajectory_player-5] [INFO] [1788145697.982365162] [trajectory_player]: 전체 경로 1회 완료 — 처음부터 반복
+[trajectory_player-5] [INFO] [1788145757.421862021] [trajectory_player]: 전체 경로 1회 완료 — 처음부터 반복
+[trajectory_player-5] [INFO] [1788145816.862111578] [trajectory_player]: 전체 경로 1회 완료 — 처음부터 반복

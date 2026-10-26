@@ -1,0 +1,28 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# OMC
+.omc/
+
+# ---- motion_planning: 재생성 가능한 산출물은 제외 (README "디렉터리 규칙" 참고) ----
+# legacy 갠트리 환경 산출물 (현재 셀은 x7y4z3; *_x7y4z3 는 바로 재생할 수 있게 포함한다)
+motion_planning/nlp4cm/out/
+motion_planning/nlp4cm/stitched/
+motion_planning/nlp4cm/collision/
+motion_planning/nlp4cm/log/
+motion_planning/nlp4cm/sequence/
+motion_planning/nlp4cm/baseline_*/
+motion_planning/nlp4cm/zsweep/
+motion_planning/nlp4cm/summary*.json
+# env 별 scene yaml 은 env.sh scene_file() 이 매번 생성한다
+motion_planning/nlp4cm/viz/env_*/
+# 통합 1 ms 명령 CSV (파츠당 100~200 MB, build_sequence 로 1~2 분에 재생성)
+motion_planning/nlp4cm/sequence*/*/sequence_command.csv
+# 백업/임시
+.bak*/
+*.egg-info/
+# colcon 워크스페이스 (저장소 밖 ~/paint_cell_ws 가 기본이지만 안에 만들었을 때 대비)
+build/
+install/

@@ -1,0 +1,105 @@
+joint_csv_dir=/home/airo/paint_cell_ws/nlp4cm/stitched/NX350h_right_fender_flat_tool
+[activate_env] paintcell(conda) + ROS2 Humble 활성화 완료 (python: /home/airo/anaconda3/envs/paintcell/bin/python)
+[INFO] [launch]: All log files can be found below /home/airo/.ros/log/2026-09-02-04-14-47-470142-airo-893975
+[INFO] [launch]: Default logging verbosity is set to INFO
+[INFO] [static_transform_publisher-1]: process started with pid [894127]
+[INFO] [static_transform_publisher-2]: process started with pid [894129]
+[INFO] [robot_state_publisher-3]: process started with pid [894131]
+[INFO] [scene_publisher-4]: process started with pid [894133]
+[INFO] [trajectory_player-5]: process started with pid [894135]
+[INFO] [rviz2-6]: process started with pid [894137]
+[static_transform_publisher-1] 1788290087.536249 [42] static_tra: selected interface "lo" is not multicast-capable: disabling multicast
+[static_transform_publisher-2] 1788290087.536454 [42] static_tra: selected interface "lo" is not multicast-capable: disabling multicast
+[rviz2-6] /opt/ros/humble/lib/rviz2/rviz2: /home/airo/anaconda3/envs/paintcell/lib/libcurl.so.4: no version information available (required by /opt/ros/humble/lib/libresource_retriever.so)
+[robot_state_publisher-3] 1788290087.538157 [42] robot_stat: selected interface "lo" is not multicast-capable: disabling multicast
+[static_transform_publisher-1] [INFO] [1788290087.539844609] [world_to_part]: Spinning until stopped - publishing transform
+[static_transform_publisher-1] translation: ('-0.966000', '-0.744000', '1.151000')
+[static_transform_publisher-1] rotation: ('0.707107', '0.000000', '0.000000', '0.707107')
+[static_transform_publisher-1] from 'world' to 'part'
+[static_transform_publisher-2] [INFO] [1788290087.540421884] [world_to_robot_root]: Spinning until stopped - publishing transform
+[static_transform_publisher-2] translation: ('0.000000', '0.000000', '0.000000')
+[static_transform_publisher-2] rotation: ('0.000000', '0.000000', '0.000000', '1.000000')
+[static_transform_publisher-2] from 'world' to 'world_base'
+[robot_state_publisher-3] [INFO] [1788290087.544285701] [robot_state_publisher]: got segment base_link
+[robot_state_publisher-3] [INFO] [1788290087.544330979] [robot_state_publisher]: got segment gantry_x_link
+[robot_state_publisher-3] [INFO] [1788290087.544336758] [robot_state_publisher]: got segment gantry_y_link
+[robot_state_publisher-3] [INFO] [1788290087.544346433] [robot_state_publisher]: got segment link_1
+[robot_state_publisher-3] [INFO] [1788290087.544350178] [robot_state_publisher]: got segment link_2
+[robot_state_publisher-3] [INFO] [1788290087.544353423] [robot_state_publisher]: got segment link_3
+[robot_state_publisher-3] [INFO] [1788290087.544356698] [robot_state_publisher]: got segment link_4
+[robot_state_publisher-3] [INFO] [1788290087.544359903] [robot_state_publisher]: got segment link_5
+[robot_state_publisher-3] [INFO] [1788290087.544363148] [robot_state_publisher]: got segment link_6
+[robot_state_publisher-3] [INFO] [1788290087.544366323] [robot_state_publisher]: got segment spray_gun
+[robot_state_publisher-3] [INFO] [1788290087.544369628] [robot_state_publisher]: got segment tool_assy
+[robot_state_publisher-3] [INFO] [1788290087.544372953] [robot_state_publisher]: got segment world_base
+[rviz2-6] 1788290087.601813 [42]      rviz2: selected interface "lo" is not multicast-capable: disabling multicast
+[trajectory_player-5] 1788290087.717831 [42] trajectory: selected interface "lo" is not multicast-capable: disabling multicast
+[trajectory_player-5] 1788290087.717994 [42] trajectory: Failed to find a free participant index for domain 42
+[trajectory_player-5] [ERROR] [1788290087.718036768] [rmw_cyclonedds_cpp]: rmw_create_node: failed to create domain, error Error
+[trajectory_player-5] 
+[trajectory_player-5] >>> [rcutils|error_handling.c:108] rcutils_set_error_state()
+[trajectory_player-5] This error state is being overwritten:
+[trajectory_player-5] 
+[trajectory_player-5]   'error not set, at ./src/rcl/node.c:263'
+[trajectory_player-5] 
+[trajectory_player-5] with this new error message:
+[trajectory_player-5] 
+[trajectory_player-5]   'rcl node's rmw handle is invalid, at ./src/rcl/node.c:415'
+[trajectory_player-5] 
+[trajectory_player-5] rcutils_reset_error() should be called after error handling to avoid this.
+[trajectory_player-5] <<<
+[trajectory_player-5] [ERROR] [1788290087.718055126] [rcl]: Failed to fini publisher for node: 1
+[trajectory_player-5] Traceback (most recent call last):
+[trajectory_player-5]   File "/home/airo/paint_cell_ws/install/paint_viz/lib/paint_viz/trajectory_player", line 33, in <module>
+[trajectory_player-5]     sys.exit(load_entry_point('paint-viz', 'console_scripts', 'trajectory_player')())
+[trajectory_player-5]   File "/home/airo/paint_cell_ws/build/paint_viz/paint_viz/trajectory_player.py", line 210, in main
+[trajectory_player-5]     node = TrajectoryPlayer()
+[trajectory_player-5]   File "/home/airo/paint_cell_ws/build/paint_viz/paint_viz/trajectory_player.py", line 28, in __init__
+[trajectory_player-5]     super().__init__("trajectory_player")
+[trajectory_player-5]   File "/opt/ros/humble/local/lib/python3.10/dist-packages/rclpy/node.py", line 175, in __init__
+[trajectory_player-5]     self.__node = _rclpy.Node(
+[trajectory_player-5] rclpy._rclpy_pybind11.RCLError: error creating node: rcl node's rmw handle is invalid, at ./src/rcl/node.c:415
+[scene_publisher-4] 1788290087.720720 [42] scene_publ: selected interface "lo" is not multicast-capable: disabling multicast
+[scene_publisher-4] 1788290087.720876 [42] scene_publ: Failed to find a free participant index for domain 42
+[scene_publisher-4] [ERROR] [1788290087.720918025] [rmw_cyclonedds_cpp]: rmw_create_node: failed to create domain, error Error
+[scene_publisher-4] 
+[scene_publisher-4] >>> [rcutils|error_handling.c:108] rcutils_set_error_state()
+[scene_publisher-4] This error state is being overwritten:
+[scene_publisher-4] 
+[scene_publisher-4]   'error not set, at ./src/rcl/node.c:263'
+[scene_publisher-4] 
+[scene_publisher-4] with this new error message:
+[scene_publisher-4] 
+[scene_publisher-4]   'rcl node's rmw handle is invalid, at ./src/rcl/node.c:415'
+[scene_publisher-4] 
+[scene_publisher-4] rcutils_reset_error() should be called after error handling to avoid this.
+[scene_publisher-4] <<<
+[scene_publisher-4] [ERROR] [1788290087.720936032] [rcl]: Failed to fini publisher for node: 1
+[scene_publisher-4] Traceback (most recent call last):
+[scene_publisher-4]   File "/home/airo/paint_cell_ws/install/paint_viz/lib/paint_viz/scene_publisher", line 33, in <module>
+[scene_publisher-4]     sys.exit(load_entry_point('paint-viz', 'console_scripts', 'scene_publisher')())
+[scene_publisher-4]   File "/home/airo/paint_cell_ws/build/paint_viz/paint_viz/scene_publisher.py", line 191, in main
+[scene_publisher-4]     node = ScenePublisher()
+[scene_publisher-4]   File "/home/airo/paint_cell_ws/build/paint_viz/paint_viz/scene_publisher.py", line 81, in __init__
+[scene_publisher-4]     super().__init__("scene_publisher")
+[scene_publisher-4]   File "/opt/ros/humble/local/lib/python3.10/dist-packages/rclpy/node.py", line 175, in __init__
+[scene_publisher-4]     self.__node = _rclpy.Node(
+[scene_publisher-4] rclpy._rclpy_pybind11.RCLError: error creating node: rcl node's rmw handle is invalid, at ./src/rcl/node.c:415
+[ERROR] [trajectory_player-5]: process has died [pid 894135, exit code 1, cmd '/home/airo/paint_cell_ws/install/paint_viz/lib/paint_viz/trajectory_player --ros-args -r __node:=trajectory_player --params-file /tmp/launch_params_970bzy8t'].
+[ERROR] [scene_publisher-4]: process has died [pid 894133, exit code 1, cmd '/home/airo/paint_cell_ws/install/paint_viz/lib/paint_viz/scene_publisher --ros-args -r __node:=scene_publisher --params-file /tmp/launch_params_um199537'].
+[rviz2-6] [INFO] [1788290088.309025822] [rviz2]: Stereo is NOT SUPPORTED
+[rviz2-6] [INFO] [1788290088.309130451] [rviz2]: OpenGl version: 4.6 (GLSL 4.6)
+[rviz2-6] [INFO] [1788290088.351799871] [rviz2]: Stereo is NOT SUPPORTED
+[WARNING] [launch]: user interrupted with ctrl-c (SIGINT)
+[INFO] [rviz2-6]: sending signal 'SIGINT' to process[rviz2-6]
+[INFO] [robot_state_publisher-3]: sending signal 'SIGINT' to process[robot_state_publisher-3]
+[INFO] [static_transform_publisher-2]: sending signal 'SIGINT' to process[static_transform_publisher-2]
+[INFO] [static_transform_publisher-1]: sending signal 'SIGINT' to process[static_transform_publisher-1]
+[rviz2-6] [INFO] [1788290107.277696856] [rclcpp]: signal_handler(signum=2)
+[robot_state_publisher-3] [INFO] [1788290107.278132616] [rclcpp]: signal_handler(signum=2)
+[static_transform_publisher-2] [INFO] [1788290107.278437398] [rclcpp]: signal_handler(signum=2)
+[static_transform_publisher-1] [INFO] [1788290107.278725104] [rclcpp]: signal_handler(signum=2)
+[INFO] [robot_state_publisher-3]: process has finished cleanly [pid 894131]
+[INFO] [static_transform_publisher-1]: process has finished cleanly [pid 894127]
+[INFO] [static_transform_publisher-2]: process has finished cleanly [pid 894129]
+[INFO] [rviz2-6]: process has finished cleanly [pid 894137]

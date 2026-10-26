@@ -1,0 +1,63 @@
+joint_csv_dir=/home/airo/paint_cell_ws/nlp4cm/stitched/NX350h_right_fender_flat
+[activate_env] paintcell(conda) + ROS2 Humble 활성화 완료 (python: /home/airo/anaconda3/envs/paintcell/bin/python)
+[INFO] [launch]: All log files can be found below /home/airo/.ros/log/2026-09-02-03-38-22-343691-airo-854248
+[INFO] [launch]: Default logging verbosity is set to INFO
+[INFO] [static_transform_publisher-1]: process started with pid [854393]
+[INFO] [static_transform_publisher-2]: process started with pid [854395]
+[INFO] [robot_state_publisher-3]: process started with pid [854397]
+[INFO] [scene_publisher-4]: process started with pid [854399]
+[INFO] [trajectory_player-5]: process started with pid [854401]
+[INFO] [rviz2-6]: process started with pid [854403]
+[static_transform_publisher-1] 1788287902.412561 [42] static_tra: selected interface "lo" is not multicast-capable: disabling multicast
+[static_transform_publisher-2] 1788287902.412983 [42] static_tra: selected interface "lo" is not multicast-capable: disabling multicast
+[rviz2-6] /opt/ros/humble/lib/rviz2/rviz2: /home/airo/anaconda3/envs/paintcell/lib/libcurl.so.4: no version information available (required by /opt/ros/humble/lib/libresource_retriever.so)
+[robot_state_publisher-3] 1788287902.414632 [42] robot_stat: selected interface "lo" is not multicast-capable: disabling multicast
+[static_transform_publisher-1] [INFO] [1788287902.415910864] [world_to_part]: Spinning until stopped - publishing transform
+[static_transform_publisher-1] translation: ('-0.966000', '-0.744000', '1.151000')
+[static_transform_publisher-1] rotation: ('0.707107', '0.000000', '0.000000', '0.707107')
+[static_transform_publisher-1] from 'world' to 'part'
+[static_transform_publisher-2] [INFO] [1788287902.416310170] [world_to_robot_root]: Spinning until stopped - publishing transform
+[static_transform_publisher-2] translation: ('0.000000', '0.000000', '0.000000')
+[static_transform_publisher-2] rotation: ('0.000000', '0.000000', '0.000000', '1.000000')
+[static_transform_publisher-2] from 'world' to 'world_base'
+[robot_state_publisher-3] [INFO] [1788287902.420079265] [robot_state_publisher]: got segment base_link
+[robot_state_publisher-3] [INFO] [1788287902.420125496] [robot_state_publisher]: got segment gantry_x_link
+[robot_state_publisher-3] [INFO] [1788287902.420131425] [robot_state_publisher]: got segment gantry_y_link
+[robot_state_publisher-3] [INFO] [1788287902.420135461] [robot_state_publisher]: got segment link_1
+[robot_state_publisher-3] [INFO] [1788287902.420139106] [robot_state_publisher]: got segment link_2
+[robot_state_publisher-3] [INFO] [1788287902.420142481] [robot_state_publisher]: got segment link_3
+[robot_state_publisher-3] [INFO] [1788287902.420145726] [robot_state_publisher]: got segment link_4
+[robot_state_publisher-3] [INFO] [1788287902.420148851] [robot_state_publisher]: got segment link_5
+[robot_state_publisher-3] [INFO] [1788287902.420152106] [robot_state_publisher]: got segment link_6
+[robot_state_publisher-3] [INFO] [1788287902.420155261] [robot_state_publisher]: got segment world_base
+[rviz2-6] 1788287902.495445 [42]      rviz2: selected interface "lo" is not multicast-capable: disabling multicast
+[scene_publisher-4] 1788287902.603058 [42] scene_publ: selected interface "lo" is not multicast-capable: disabling multicast
+[trajectory_player-5] 1788287902.605244 [42] trajectory: selected interface "lo" is not multicast-capable: disabling multicast
+[scene_publisher-4] [INFO] [1788287902.634295545] [scene_publisher]: 부품 점군 17956점 로드: NX350h_right_fender.ply
+[scene_publisher-4] [INFO] [1788287902.653937691] [scene_publisher]: 경로 19 row / 307 point 로드 (분사 ON 206점)
+[trajectory_player-5] [INFO] [1788287902.674742020] [trajectory_player]: joint 궤적 37개 재생 시작 (총 133.3s, speed_scale=8.0)
+[rviz2-6] [INFO] [1788287903.203151059] [rviz2]: Stereo is NOT SUPPORTED
+[rviz2-6] [INFO] [1788287903.203268237] [rviz2]: OpenGl version: 4.6 (GLSL 4.6)
+[rviz2-6] [INFO] [1788287903.356561379] [rviz2]: Stereo is NOT SUPPORTED
+[trajectory_player-5] [INFO] [1788287921.141192342] [trajectory_player]: 전체 경로 1회 완료 — 처음부터 반복
+[trajectory_player-5] [INFO] [1788287939.620922018] [trajectory_player]: 전체 경로 1회 완료 — 처음부터 반복
+[INFO] [rviz2-6]: process has finished cleanly [pid 854403]
+[trajectory_player-5] [INFO] [1788287958.101368314] [trajectory_player]: 전체 경로 1회 완료 — 처음부터 반복
+[trajectory_player-5] [INFO] [1788287976.581667728] [trajectory_player]: 전체 경로 1회 완료 — 처음부터 반복
+[trajectory_player-5] [INFO] [1788287995.061684484] [trajectory_player]: 전체 경로 1회 완료 — 처음부터 반복
+[trajectory_player-5] [INFO] [1788288013.541186008] [trajectory_player]: 전체 경로 1회 완료 — 처음부터 반복
+[trajectory_player-5] [INFO] [1788288032.021328391] [trajectory_player]: 전체 경로 1회 완료 — 처음부터 반복
+[WARNING] [launch]: user interrupted with ctrl-c (SIGINT)
+[INFO] [trajectory_player-5]: sending signal 'SIGINT' to process[trajectory_player-5]
+[INFO] [scene_publisher-4]: sending signal 'SIGINT' to process[scene_publisher-4]
+[INFO] [robot_state_publisher-3]: sending signal 'SIGINT' to process[robot_state_publisher-3]
+[INFO] [static_transform_publisher-2]: sending signal 'SIGINT' to process[static_transform_publisher-2]
+[INFO] [static_transform_publisher-1]: sending signal 'SIGINT' to process[static_transform_publisher-1]
+[robot_state_publisher-3] [INFO] [1788288048.073512708] [rclcpp]: signal_handler(signum=2)
+[static_transform_publisher-2] [INFO] [1788288048.073884072] [rclcpp]: signal_handler(signum=2)
+[static_transform_publisher-1] [INFO] [1788288048.074161583] [rclcpp]: signal_handler(signum=2)
+[INFO] [static_transform_publisher-1]: process has finished cleanly [pid 854393]
+[INFO] [robot_state_publisher-3]: process has finished cleanly [pid 854397]
+[INFO] [static_transform_publisher-2]: process has finished cleanly [pid 854395]
+[INFO] [scene_publisher-4]: process has finished cleanly [pid 854399]
+[INFO] [trajectory_player-5]: process has finished cleanly [pid 854401]

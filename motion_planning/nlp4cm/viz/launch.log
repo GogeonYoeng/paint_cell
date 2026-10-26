@@ -1,0 +1,100 @@
+joint_csv_dir=/home/airo/paint_cell_ws/nlp4cm/stitched/ES300h_hood
+[activate_env] paintcell(conda) + ROS2 Humble 활성화 완료 (python: /home/airo/anaconda3/envs/paintcell/bin/python)
+[INFO] [launch]: All log files can be found below /home/airo/.ros/log/2026-08-31-12-10-42-102417-airo-62061
+[INFO] [launch]: Default logging verbosity is set to INFO
+[INFO] [static_transform_publisher-1]: process started with pid [62160]
+[INFO] [static_transform_publisher-2]: process started with pid [62162]
+[INFO] [robot_state_publisher-3]: process started with pid [62164]
+[INFO] [scene_publisher-4]: process started with pid [62166]
+[INFO] [trajectory_player-5]: process started with pid [62168]
+[INFO] [rviz2-6]: process started with pid [62170]
+[static_transform_publisher-1] 1788145842.171796 [42] static_tra: selected interface "lo" is not multicast-capable: disabling multicast
+[static_transform_publisher-2] 1788145842.172701 [42] static_tra: selected interface "lo" is not multicast-capable: disabling multicast
+[rviz2-6] /opt/ros/humble/lib/rviz2/rviz2: /home/airo/anaconda3/envs/paintcell/lib/libcurl.so.4: no version information available (required by /opt/ros/humble/lib/libresource_retriever.so)
+[robot_state_publisher-3] 1788145842.173930 [42] robot_stat: selected interface "lo" is not multicast-capable: disabling multicast
+[static_transform_publisher-1] [INFO] [1788145842.174994647] [world_to_part]: Spinning until stopped - publishing transform
+[static_transform_publisher-1] translation: ('-0.751000', '-1.316000', '1.879000')
+[static_transform_publisher-1] rotation: ('0.000000', '0.000000', '0.000000', '1.000000')
+[static_transform_publisher-1] from 'world' to 'part'
+[static_transform_publisher-2] [INFO] [1788145842.176128217] [world_to_robot_root]: Spinning until stopped - publishing transform
+[static_transform_publisher-2] translation: ('0.000000', '0.000000', '0.000000')
+[static_transform_publisher-2] rotation: ('0.000000', '0.000000', '0.000000', '1.000000')
+[static_transform_publisher-2] from 'world' to 'world_base'
+[robot_state_publisher-3] [INFO] [1788145842.179899198] [robot_state_publisher]: got segment base_link
+[robot_state_publisher-3] [INFO] [1788145842.179976756] [robot_state_publisher]: got segment gantry_x_link
+[robot_state_publisher-3] [INFO] [1788145842.179983166] [robot_state_publisher]: got segment gantry_y_link
+[robot_state_publisher-3] [INFO] [1788145842.179987112] [robot_state_publisher]: got segment link_1
+[robot_state_publisher-3] [INFO] [1788145842.179990817] [robot_state_publisher]: got segment link_2
+[robot_state_publisher-3] [INFO] [1788145842.179994262] [robot_state_publisher]: got segment link_3
+[robot_state_publisher-3] [INFO] [1788145842.179997447] [robot_state_publisher]: got segment link_4
+[robot_state_publisher-3] [INFO] [1788145842.180000632] [robot_state_publisher]: got segment link_5
+[robot_state_publisher-3] [INFO] [1788145842.180003807] [robot_state_publisher]: got segment link_6
+[robot_state_publisher-3] [INFO] [1788145842.180006952] [robot_state_publisher]: got segment world_base
+[rviz2-6] 1788145842.260549 [42]      rviz2: selected interface "lo" is not multicast-capable: disabling multicast
+[scene_publisher-4] 1788145842.358524 [42] scene_publ: selected interface "lo" is not multicast-capable: disabling multicast
+[trajectory_player-5] 1788145842.358527 [42] trajectory: selected interface "lo" is not multicast-capable: disabling multicast
+[scene_publisher-4] [INFO] [1788145842.391612876] [scene_publisher]: 부품 점군 76952점 로드: ES300h_hood.ply
+[trajectory_player-5] [INFO] [1788145842.440460084] [trajectory_player]: joint 궤적 63개 재생 시작 (총 450.7s, speed_scale=8.0)
+[scene_publisher-4] [INFO] [1788145842.467776817] [scene_publisher]: 경로 32 row / 1091 point 로드 (분사 ON 911점)
+[rviz2-6] [INFO] [1788145842.971831124] [rviz2]: Stereo is NOT SUPPORTED
+[rviz2-6] [INFO] [1788145842.971977667] [rviz2]: OpenGl version: 4.6 (GLSL 4.6)
+[rviz2-6] [INFO] [1788145843.109987977] [rviz2]: Stereo is NOT SUPPORTED
+[trajectory_player-5] [INFO] [1788145901.867857312] [trajectory_player]: 전체 경로 1회 완료 — 처음부터 반복
+[INFO] [rviz2-6]: process has finished cleanly [pid 62170]
+[trajectory_player-5] [INFO] [1788145961.307598813] [trajectory_player]: 전체 경로 1회 완료 — 처음부터 반복
+[trajectory_player-5] [INFO] [1788146020.747514682] [trajectory_player]: 전체 경로 1회 완료 — 처음부터 반복
+[trajectory_player-5] [INFO] [1788146080.187327962] [trajectory_player]: 전체 경로 1회 완료 — 처음부터 반복
+[trajectory_player-5] [INFO] [1788146139.627095184] [trajectory_player]: 전체 경로 1회 완료 — 처음부터 반복
+[trajectory_player-5] [INFO] [1788146199.067089814] [trajectory_player]: 전체 경로 1회 완료 — 처음부터 반복
+[trajectory_player-5] [INFO] [1788146258.507056470] [trajectory_player]: 전체 경로 1회 완료 — 처음부터 반복
+[trajectory_player-5] [INFO] [1788146317.947105446] [trajectory_player]: 전체 경로 1회 완료 — 처음부터 반복
+[trajectory_player-5] [INFO] [1788146377.387215116] [trajectory_player]: 전체 경로 1회 완료 — 처음부터 반복
+[trajectory_player-5] [INFO] [1788146436.827067168] [trajectory_player]: 전체 경로 1회 완료 — 처음부터 반복
+[trajectory_player-5] [INFO] [1788146496.267785665] [trajectory_player]: 전체 경로 1회 완료 — 처음부터 반복
+[trajectory_player-5] [INFO] [1788146555.707181805] [trajectory_player]: 전체 경로 1회 완료 — 처음부터 반복
+[trajectory_player-5] [INFO] [1788146615.147704769] [trajectory_player]: 전체 경로 1회 완료 — 처음부터 반복
+[trajectory_player-5] [INFO] [1788146674.587438794] [trajectory_player]: 전체 경로 1회 완료 — 처음부터 반복
+[trajectory_player-5] [INFO] [1788146734.027108511] [trajectory_player]: 전체 경로 1회 완료 — 처음부터 반복
+[trajectory_player-5] [INFO] [1788146793.467763109] [trajectory_player]: 전체 경로 1회 완료 — 처음부터 반복
+[trajectory_player-5] [INFO] [1788146852.907103866] [trajectory_player]: 전체 경로 1회 완료 — 처음부터 반복
+[trajectory_player-5] [INFO] [1788146912.347057724] [trajectory_player]: 전체 경로 1회 완료 — 처음부터 반복
+[static_transform_publisher-1] [INFO] [1788146930.413465558] [rclcpp]: signal_handler(signum=15)
+[static_transform_publisher-2] [INFO] [1788146930.431323628] [rclcpp]: signal_handler(signum=15)
+[robot_state_publisher-3] [INFO] [1788146930.447524673] [rclcpp]: signal_handler(signum=15)
+[scene_publisher-4] Traceback (most recent call last):
+[scene_publisher-4]   File "/home/airo/paint_cell_ws/install/paint_viz/lib/paint_viz/scene_publisher", line 33, in <module>
+[scene_publisher-4]     sys.exit(load_entry_point('paint-viz', 'console_scripts', 'scene_publisher')())
+[scene_publisher-4]   File "/home/airo/paint_cell_ws/build/paint_viz/paint_viz/scene_publisher.py", line 193, in main
+[scene_publisher-4]     rclpy.spin(node)
+[scene_publisher-4]   File "/opt/ros/humble/local/lib/python3.10/dist-packages/rclpy/__init__.py", line 229, in spin
+[scene_publisher-4]     executor.spin_once()
+[scene_publisher-4]   File "/opt/ros/humble/local/lib/python3.10/dist-packages/rclpy/executors.py", line 751, in spin_once
+[scene_publisher-4]     self._spin_once_impl(timeout_sec)
+[scene_publisher-4]   File "/opt/ros/humble/local/lib/python3.10/dist-packages/rclpy/executors.py", line 740, in _spin_once_impl
+[scene_publisher-4]     handler, entity, node = self.wait_for_ready_callbacks(timeout_sec=timeout_sec)
+[scene_publisher-4]   File "/opt/ros/humble/local/lib/python3.10/dist-packages/rclpy/executors.py", line 723, in wait_for_ready_callbacks
+[scene_publisher-4]     return next(self._cb_iter)
+[scene_publisher-4]   File "/opt/ros/humble/local/lib/python3.10/dist-packages/rclpy/executors.py", line 624, in _wait_for_ready_callbacks
+[scene_publisher-4]     raise ExternalShutdownException()
+[scene_publisher-4] rclpy.executors.ExternalShutdownException
+[trajectory_player-5] Traceback (most recent call last):
+[trajectory_player-5]   File "/home/airo/paint_cell_ws/install/paint_viz/lib/paint_viz/trajectory_player", line 33, in <module>
+[trajectory_player-5]     sys.exit(load_entry_point('paint-viz', 'console_scripts', 'trajectory_player')())
+[trajectory_player-5]   File "/home/airo/paint_cell_ws/build/paint_viz/paint_viz/trajectory_player.py", line 212, in main
+[trajectory_player-5]     rclpy.spin(node)
+[trajectory_player-5]   File "/opt/ros/humble/local/lib/python3.10/dist-packages/rclpy/__init__.py", line 229, in spin
+[trajectory_player-5]     executor.spin_once()
+[trajectory_player-5]   File "/opt/ros/humble/local/lib/python3.10/dist-packages/rclpy/executors.py", line 751, in spin_once
+[trajectory_player-5]     self._spin_once_impl(timeout_sec)
+[trajectory_player-5]   File "/opt/ros/humble/local/lib/python3.10/dist-packages/rclpy/executors.py", line 740, in _spin_once_impl
+[trajectory_player-5]     handler, entity, node = self.wait_for_ready_callbacks(timeout_sec=timeout_sec)
+[trajectory_player-5]   File "/opt/ros/humble/local/lib/python3.10/dist-packages/rclpy/executors.py", line 723, in wait_for_ready_callbacks
+[trajectory_player-5]     return next(self._cb_iter)
+[trajectory_player-5]   File "/opt/ros/humble/local/lib/python3.10/dist-packages/rclpy/executors.py", line 596, in _wait_for_ready_callbacks
+[trajectory_player-5]     wait_set = _rclpy.WaitSet(
+[trajectory_player-5] rclpy._rclpy_pybind11.RCLError: failed to initialize wait set: the given context is not valid, either rcl_init() was not called or rcl_shutdown() was called., at ./src/rcl/wait.c:130
+[ERROR] [scene_publisher-4]: process has died [pid 62166, exit code 1, cmd '/home/airo/paint_cell_ws/install/paint_viz/lib/paint_viz/scene_publisher --ros-args -r __node:=scene_publisher --params-file /tmp/launch_params_xe33zqrc'].
+[INFO] [static_transform_publisher-1]: process has finished cleanly [pid 62160]
+[ERROR] [trajectory_player-5]: process has died [pid 62168, exit code 1, cmd '/home/airo/paint_cell_ws/install/paint_viz/lib/paint_viz/trajectory_player --ros-args -r __node:=trajectory_player --params-file /tmp/launch_params_kog0a6q1'].
+[INFO] [static_transform_publisher-2]: process has finished cleanly [pid 62162]
+[INFO] [robot_state_publisher-3]: process has finished cleanly [pid 62164]

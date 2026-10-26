@@ -1,0 +1,48 @@
+[activate_env] paintcell(conda) + ROS2 Humble 활성화 완료 (python: /home/airo/anaconda3/envs/paintcell/bin/python)
+[INFO] [launch]: All log files can be found below /home/airo/.ros/log/2026-08-31-11-58-57-894209-airo-51221
+[INFO] [launch]: Default logging verbosity is set to INFO
+[INFO] [static_transform_publisher-1]: process started with pid [51347]
+[INFO] [static_transform_publisher-2]: process started with pid [51349]
+[INFO] [robot_state_publisher-3]: process started with pid [51351]
+[INFO] [scene_publisher-4]: process started with pid [51353]
+[INFO] [trajectory_player-5]: process started with pid [51355]
+[INFO] [rviz2-6]: process started with pid [51357]
+[static_transform_publisher-1] 1788145137.964505 [42] static_tra: selected interface "lo" is not multicast-capable: disabling multicast
+[static_transform_publisher-2] 1788145137.965120 [42] static_tra: selected interface "lo" is not multicast-capable: disabling multicast
+[robot_state_publisher-3] 1788145137.967284 [42] robot_stat: selected interface "lo" is not multicast-capable: disabling multicast
+[static_transform_publisher-1] [INFO] [1788145137.967756837] [world_to_part]: Spinning until stopped - publishing transform
+[static_transform_publisher-1] translation: ('-0.751000', '-1.316000', '1.879000')
+[static_transform_publisher-1] rotation: ('0.000000', '0.000000', '0.000000', '1.000000')
+[static_transform_publisher-1] from 'world' to 'part'
+[static_transform_publisher-2] [INFO] [1788145137.968647807] [world_to_robot_root]: Spinning until stopped - publishing transform
+[static_transform_publisher-2] translation: ('0.000000', '0.000000', '0.000000')
+[static_transform_publisher-2] rotation: ('0.000000', '0.000000', '0.000000', '1.000000')
+[static_transform_publisher-2] from 'world' to 'world_base'
+[robot_state_publisher-3] [INFO] [1788145137.972701164] [robot_state_publisher]: got segment base_link
+[robot_state_publisher-3] [INFO] [1788145137.972753283] [robot_state_publisher]: got segment gantry_x_link
+[robot_state_publisher-3] [INFO] [1788145137.972759672] [robot_state_publisher]: got segment gantry_y_link
+[robot_state_publisher-3] [INFO] [1788145137.972763758] [robot_state_publisher]: got segment link_1
+[robot_state_publisher-3] [INFO] [1788145137.972767294] [robot_state_publisher]: got segment link_2
+[robot_state_publisher-3] [INFO] [1788145137.972770479] [robot_state_publisher]: got segment link_3
+[robot_state_publisher-3] [INFO] [1788145137.972773653] [robot_state_publisher]: got segment link_4
+[robot_state_publisher-3] [INFO] [1788145137.972776738] [robot_state_publisher]: got segment link_5
+[robot_state_publisher-3] [INFO] [1788145137.972779973] [robot_state_publisher]: got segment link_6
+[robot_state_publisher-3] [INFO] [1788145137.972783168] [robot_state_publisher]: got segment world_base
+[rviz2-6] /opt/ros/humble/lib/rviz2/rviz2: /home/airo/anaconda3/envs/paintcell/lib/libcurl.so.4: no version information available (required by /opt/ros/humble/lib/libresource_retriever.so)
+[rviz2-6] 1788145138.074089 [42]      rviz2: selected interface "lo" is not multicast-capable: disabling multicast
+[trajectory_player-5] 1788145138.149895 [42] trajectory: selected interface "lo" is not multicast-capable: disabling multicast
+[scene_publisher-4] 1788145138.150987 [42] scene_publ: selected interface "lo" is not multicast-capable: disabling multicast
+[scene_publisher-4] [INFO] [1788145138.182988401] [scene_publisher]: 부품 점군 76952점 로드: ES300h_hood.ply
+[trajectory_player-5] [INFO] [1788145138.217358912] [trajectory_player]: joint 궤적 32개 재생 시작 (총 430.0s, speed_scale=8.0)
+[scene_publisher-4] [INFO] [1788145138.257508903] [scene_publisher]: 경로 32 row / 1091 point 로드 (분사 ON 911점)
+[rviz2-6] [INFO] [1788145138.687111958] [rviz2]: Stereo is NOT SUPPORTED
+[rviz2-6] [INFO] [1788145138.687218480] [rviz2]: OpenGl version: 4.6 (GLSL 4.6)
+[rviz2-6] [INFO] [1788145138.727019823] [rviz2]: Stereo is NOT SUPPORTED
+[trajectory_player-5] [INFO] [1788145193.623963612] [trajectory_player]: 전체 경로 1회 완료 — 처음부터 반복
+[trajectory_player-5] [INFO] [1788145249.043985761] [trajectory_player]: 전체 경로 1회 완료 — 처음부터 반복
+[trajectory_player-5] [INFO] [1788145304.464126782] [trajectory_player]: 전체 경로 1회 완료 — 처음부터 반복
+[trajectory_player-5] [INFO] [1788145359.884594455] [trajectory_player]: 전체 경로 1회 완료 — 처음부터 반복
+[trajectory_player-5] [INFO] [1788145415.303965068] [trajectory_player]: 전체 경로 1회 완료 — 처음부터 반복
+[INFO] [rviz2-6]: process has finished cleanly [pid 51357]
+[trajectory_player-5] [INFO] [1788145470.724484924] [trajectory_player]: 전체 경로 1회 완료 — 처음부터 반복
+[trajectory_player-5] [INFO] [1788145526.144220408] [trajectory_player]: 전체 경로 1회 완료 — 처음부터 반복

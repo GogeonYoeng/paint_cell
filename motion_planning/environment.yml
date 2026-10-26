@@ -1,0 +1,27 @@
+# 도장셀 모션 파이프라인 conda 환경 — ROS2 Humble(시스템 apt) + conda(pinocchio/casadi) 하이브리드.
+#   conda env create -f motion_planning/environment.yml
+#   (갱신) conda env update -n paintcell -f motion_planning/environment.yml
+# 주의:
+#  - python=3.10 고정. 시스템 ROS2 Humble(rclpy) 이 Python 3.10 ABI 라 3.11/3.12 는 rclpy import 가 깨진다.
+#  - numpy<2 고정: 시스템 ROS2(numpy 1.24 기반) 메시지 변환과 호환 유지.
+#  - 검증된 조합 (2026-10): python 3.10.20, pinocchio 4.1.0, casadi 3.7.2, numpy 1.26.4, scipy 1.15.2, pandas 2.2.3
+name: paintcell
+channels:
+  - conda-forge
+  - nodefaults
+dependencies:
+  - python=3.10
+  - pinocchio>=3        # 강체 운동학 (URDF, FK/야코비안, 충돌 형상). eigenpy/coal 은 함께 설치된다
+  - casadi>=3.6         # trajectory_nlp.py 의 NLP (Ipopt 포함)
+  - numpy>=1.24,<2
+  - scipy               # stitch/sequence 의 KD-tree, CubicSpline
+  - pandas              # 결과 분석 스크립트
+  - pyyaml
+  - pip
+  - pip:
+      # colcon 을 conda 환경 안에 두어야 ament_python 패키지(paint_viz)가 conda Python 대상으로 빌드된다.
+      # 시스템 /usr/bin/colcon 으로 빌드하면 ros2 run 시 conda 의 pinocchio 를 못 찾는다. 시스템 colcon 은 건드리지 않는다.
+      - colcon-common-extensions
+      - catkin_pkg
+      - empy==3.3.4
+      - lark

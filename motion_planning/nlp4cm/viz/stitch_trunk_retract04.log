@@ -1,0 +1,19 @@
+[stitch] row 16개, 전이 15곳 생성
+[stitch] 리트랙트 적응형 (안전계수 9.0, 5~400 mm), 샘플 간격 10 mm
+[stitch] move  0-> 1 pts=  66 T= 0.65s lift=  5.0mm pos_err= 0.62mm seam= 0.00 v=0.36 a=0.98
+[stitch] move  1-> 2 pts=  90 T= 0.88s lift= 14.4mm pos_err= 0.13mm seam= 0.00 v=0.17 a=0.83
+[stitch] move  2-> 3 pts=  58 T= 0.56s lift=  5.0mm pos_err= 0.06mm seam= 0.00 v=0.16 a=0.87
+[stitch] move  3-> 4 pts=  58 T= 0.57s lift=  5.0mm pos_err= 0.07mm seam= 0.00 v=0.19 a=0.92
+[stitch] move  4-> 5 pts=  51 T= 0.50s lift=  5.0mm pos_err= 0.06mm seam= 0.00 v=0.19 a=0.96
+[stitch] move  5-> 6 pts=  56 T= 0.54s lift=  5.0mm pos_err= 0.21mm seam= 0.00 v=0.20 a=0.99
+[stitch] move  6-> 7 pts= 268 T= 2.66s lift=  5.0mm pos_err= 0.07mm seam= 0.00 v=0.40 a=0.89
+[stitch] move  7-> 8 pts=  70 T= 0.68s lift=  5.0mm pos_err= 1.81mm seam= 0.00 v=0.39 a=0.89
+[stitch] move  8-> 9 pts=  83 T= 0.82s lift=  5.0mm pos_err= 0.81mm seam= 0.00 v=0.48 a=0.90
+[stitch] move  9->10 pts= 197 T= 1.96s lift= 20.5mm pos_err= 1.98mm seam= 0.00 v=0.16 a=0.89
+[stitch] move 10->11 pts=2902 T=29.00s lift=400.0mm pos_err= 1.98mm seam= 0.00 v=0.21 a=0.89
+[stitch] move 11->12 pts=  88 T= 0.87s lift=  5.0mm pos_err= 0.36mm seam= 0.00 v=0.23 a=0.86
+[stitch] move 12->13 pts=4008 T=40.07s lift=400.0mm pos_err= 1.99mm seam= 0.00 v=0.15 a=0.94
+[stitch] move 13->14 pts=  95 T= 0.93s lift=  6.0mm pos_err= 1.53mm seam= 0.00 v=0.42 a=0.91
+[stitch] move 14->15 pts=  85 T= 0.84s lift=  5.0mm pos_err= 0.18mm seam= 0.00 v=0.18 a=0.91
+[stitch] 완료: 세그먼트 31개 -> stitched/ES300h_trunk
+[stitch] 전이 총 시간 81.5s, 최악 추종오차 1.99mm / 0.13deg, 최악 이음새 0.000, 속도 한계 대비 0.48, 가속도 한계 대비 0.99
