@@ -45,7 +45,8 @@ DEFAULT_URDF = (
 )
 DEFAULT_OUTPUT_DIR = Path("/tmp/trajectory_ik")
 
-TCP_FRAME = "link_6"
+TCP_FRAME = "auto"  # tcp > spray_gun > link_6 중 URDF 에 있는 것
+TCP_FRAME_CANDIDATES = ("tcp", "spray_gun", "link_6")
 TCP_SPRAY_AXIS = "z"
 TCP_PATH_AXIS = "x"
 COMMAND_TIME_SEC = 0.001
@@ -59,6 +60,18 @@ MAX_JOINT_VELOCITY_DEG_S = 70.0
 MAX_JOINT_ACCELERATION_DEG_S2 = 500.0
 MIN_MANIPULABILITY = 0.0
 MIN_SINGULAR_VALUE = 0.01 #1.0e-4
+
+# 갠트리 직동축(prismatic) 한계. 위의 회전축 한계와 단위가 달라 따로 둔다.
+# 6축 회전 전용 URDF 에서는 직동축이 없으므로 이 값들은 쓰이지 않는다.
+MAX_GANTRY_STEP_M = 0.05
+MAX_GANTRY_VELOCITY_M_S = 1.0
+MAX_GANTRY_ACCELERATION_M_S2 = 5.0
+IK_DUPLICATE_CANDIDATE_M = 0.005
+
+# planner CSV 는 부품 스캔 좌표계 값이다. 로봇 월드 좌표계로 옮기는 변환.
+# 기본값 0 이면 예전처럼 스캔 좌표를 그대로 월드로 쓴다(= 배치 미지정).
+PART_XYZ = "0,0,0"
+PART_RPY = "0,0,0"
 
 IK_MAX_ITER = 100
 IK_DAMPING = 0.03
@@ -227,13 +240,37 @@ def quaternion_xyzw_to_matrix(qx: float, qy: float, qz: float, qw: float) -> np.
     )
 
 
+def rpy_to_matrix(roll: float, pitch: float, yaw: float) -> np.ndarray:
+    """고정축 RPY(=Rz@Ry@Rx)를 회전행렬로 바꾼다. URDF origin rpy 와 같은 규약이다."""
+    cr, sr = math.cos(roll), math.sin(roll)
+    cp, sp = math.cos(pitch), math.sin(pitch)
+    cy, sy = math.cos(yaw), math.sin(yaw)
+    rz = np.array([[cy, -sy, 0.0], [sy, cy, 0.0], [0.0, 0.0, 1.0]])
+    ry = np.array([[cp, 0.0, sp], [0.0, 1.0, 0.0], [-sp, 0.0, cp]])
+    rx = np.array([[1.0, 0.0, 0.0], [0.0, cr, -sr], [0.0, sr, cr]])
+    return rz @ ry @ rx
+
+
 def load_task_points(
     csv_path: Path,
     stride: int,
     max_points: int,
     tcp_spray_axis: str,
     tcp_path_axis: str,
+    part_rotation: np.ndarray | None = None,
+    part_translation: np.ndarray | None = None,
 ) -> list[TaskPoint]:
+    """planner CSV 를 읽어 로봇 월드 좌표계의 TaskPoint 로 만든다.
+
+    CSV 의 position/orientation 은 **부품 스캔 좌표계** 값이다. part_rotation /
+    part_translation 이 그 값을 도장셀 월드 좌표계로 옮긴다(= 셀 안에서 부품을
+    어디에 어떤 자세로 고정하는가). 지정하지 않으면 항등변환이라 스캔 좌표를
+    그대로 월드로 쓴다 — 예전 동작과 같다.
+    """
+    part_rotation = np.eye(3) if part_rotation is None else np.asarray(part_rotation, dtype=float)
+    part_translation = (
+        np.zeros(3) if part_translation is None else np.asarray(part_translation, dtype=float)
+    )
     with csv_path.open("r", newline="", encoding="utf-8-sig") as stream:
         reader = csv.DictReader(stream)
         required = [
@@ -279,12 +316,14 @@ def load_task_points(
                 [float(row["position_x"]), float(row["position_y"]), float(row["position_z"])],
                 dtype=float,
             )
+            position = part_rotation @ position + part_translation
             rotation = quaternion_xyzw_to_matrix(
                 float(row["orientation_x"]),
                 float(row["orientation_y"]),
                 float(row["orientation_z"]),
                 float(row["orientation_w"]),
             )
+            rotation = part_rotation @ rotation
             rotation = remap_planner_rotation_to_tcp(
                 rotation,
                 tcp_spray_axis=tcp_spray_axis,
@@ -381,17 +420,32 @@ def joint_motion_from_arc_profile(
     points: list[TaskPoint],
     q_rad: np.ndarray,
 ) -> tuple[np.ndarray, np.ndarray]:
-    arc = np.array([point.s for point in points], dtype=float)
-    path_speed = np.array([point.path_speed for point in points], dtype=float)
-    path_acceleration = np.array([point.path_acceleration for point in points], dtype=float)
+    # 속도/가속도를 **시간 기반**으로 계산한다.
+    #
+    # 예전에는 호길이 연쇄법칙을 썼다:
+    #     qd  = dq/ds · ṡ
+    #     qdd = d²q/ds² · ṡ² + dq/ds · s̈
+    # 이 식은 사다리꼴 프로파일의 양 끝(정지 구간)에서 **ds 가 붕괴**하면 무너진다.
+    # ds 로 나누는 dq/ds 부터 병들고, d²q/ds² 는 1/ds² 로 더 심하게 폭주한다.
+    #
+    # 실측 (ES300h_hood row0, NLP 해, 갠트리 |a|max, 한계 5.0):
+    #     stride   옛 식    시간기반
+    #        8     0.512     0.497
+    #        4     0.566     0.483
+    #        2     0.761     0.485
+    #        1     4.932     0.488     <- ds 중앙 1.00 mm, 끝점 부근 0.037 mm
+    # 시간 기반은 stride 와 무관하게 일정하고 planner 의 max_acceleration=0.5 와 맞는다.
+    # 옛 식은 stride 1 에서 한계의 98.6% 를 보고해 거짓 경보 직전이었다.
+    #
+    # 가속도만 시간 기반으로 바꾸는 것으로는 부족하다 — dq/ds 를 거쳐 만든 qd 를
+    # 미분하면 그 spike 가 되살아난다(실측 5.418). 속도부터 시간 기반이어야 한다.
+    #
+    # 실기 명령 CSV(build_command_trajectory)는 자체 dq_ds 를 따로 계산하므로
+    # 로봇에 나가는 값은 이 수정과 무관하다(6축 A/B 로 바이트 동일 확인).
+    times = np.array([point.t for point in points], dtype=float)
+    qd_rad = derivative_by_axis(times, q_rad)
+    qdd_rad = derivative_by_axis(times, qd_rad)
 
-    dq_ds = derivative_by_axis(arc, q_rad)
-    d2q_ds2 = derivative_by_axis(arc, dq_ds)
-    qd_rad = dq_ds * path_speed.reshape(-1, 1)
-    qdd_rad = (
-        d2q_ds2 * (path_speed * path_speed).reshape(-1, 1)
-        + dq_ds * path_acceleration.reshape(-1, 1)
-    )
     qd_rad[0] = 0.0
     qd_rad[-1] = 0.0
     qdd_rad[0] = 0.0
@@ -434,6 +488,10 @@ def create_pinocchio_model(urdf_path: Path, tcp_frame: str):
     require_pinocchio()
     model = pin.buildModelFromUrdf(str(urdf_path))
     data = model.createData()
+    if tcp_frame == "auto":
+        # 툴 장착 셀 URDF 는 노즐 팁 "tcp", 툴 프레임이 없는 6축 단독 모델은 종전대로 link_6
+        names = {frame.name for frame in model.frames}
+        tcp_frame = next((c for c in TCP_FRAME_CANDIDATES if c in names), tcp_frame)
     frame_id = model.getFrameId(tcp_frame)
     if frame_id >= len(model.frames):
         raise ValueError(f"TCP frame '{tcp_frame}' not found in URDF")
@@ -448,6 +506,73 @@ def finite_limits(model) -> tuple[np.ndarray, np.ndarray]:
     lower = np.where(np.isfinite(lower), lower, -math.pi)
     upper = np.where(np.isfinite(upper), upper, math.pi)
     return lower, upper
+
+
+def prismatic_joint_mask(model) -> np.ndarray:
+    """관절별 직동 여부 마스크. 갠트리 직동축은 m, 회전축은 rad 로 다뤄야 한다.
+
+    pinocchio 관절 shortname 이 JointModelPX/PY/PZ/PrismaticUnaligned 면 직동이다.
+    6축 회전 전용 URDF 에서는 전부 False 라 아래 한계 벡터가 예전 스칼라 값과
+    똑같아지고, 동작도 변하지 않는다.
+    """
+    mask = np.zeros(model.nq, dtype=bool)
+    for joint_index in range(1, model.njoints):
+        joint = model.joints[joint_index]
+        name = joint.shortname()
+        is_prismatic = name.startswith("JointModelP") and not name.startswith("JointModelPlanar")
+        mask[joint.idx_q : joint.idx_q + joint.nq] = is_prismatic
+    return mask
+
+
+def attach_joint_motion_limits(model, args: argparse.Namespace) -> argparse.Namespace:
+    """관절별 점프/속도/가속도/중복판정 한계를 SI 벡터로 만들어 args 에 붙인다.
+
+    아래 함수들이 이미 args 를 통째로 받고 있어, 시그니처를 바꾸지 않고
+    단위 정보를 전달하려고 args 에 담는다. 회전축은 rad 계열(deg 인자를 변환),
+    직동축은 m 계열이다.
+    """
+    prismatic = prismatic_joint_mask(model)
+    args.joint_prismatic = prismatic
+    args.joint_step_limit = np.where(
+        prismatic, float(args.max_gantry_step_m), math.radians(float(args.max_joint_step_deg))
+    )
+    args.joint_velocity_limit = np.where(
+        prismatic,
+        float(args.max_gantry_velocity_m_s),
+        math.radians(float(args.max_joint_velocity_deg_s)),
+    )
+    args.joint_acceleration_limit = np.where(
+        prismatic,
+        float(args.max_gantry_acceleration_m_s2),
+        math.radians(float(args.max_joint_acceleration_deg_s2)),
+    )
+    args.joint_duplicate_threshold = np.where(
+        prismatic,
+        float(args.ik_duplicate_candidate_m),
+        math.radians(max(float(args.ik_duplicate_candidate_deg), 1.0e-6)),
+    )
+
+    # 연속해 보존 개수. auto(-1)이면 여유자유도가 있는 모델에서만 켠다.
+    # 6축 팔은 해 분기가 이산적이라 예전대로 0(끄기) → 실기 경로 동작 불변.
+    #
+    # 여유자유도 모델에서는 **이전 점의 모든 후보**에 대해 연속해를 남긴다.
+    # 일부(상위 N개)만 남기면 DP 상태가 남겨두지 않은 후보를 거쳐갈 때 이어질
+    # 후보가 없어 그래프가 끊긴다 (실측: 상위 4개만 보존하면 점 5에서 막힘).
+    if int(args.ik_keep_continuations) < 0:
+        redundant = model.nq > 6 or bool(np.any(prismatic))
+        args.ik_keep_continuations = int(args.ik_max_candidates_per_point) if redundant else 0
+    return args
+
+
+def format_joint_vector(values: np.ndarray, prismatic: np.ndarray, suffix: str = "") -> str:
+    """관절 벡터를 관절별 고유 단위로 찍는다 (직동 m, 회전 deg)."""
+    parts = []
+    for value, is_prismatic in zip(np.asarray(values).reshape(-1), prismatic):
+        if is_prismatic:
+            parts.append(f"{value:.4f}m{suffix}")
+        else:
+            parts.append(f"{math.degrees(value):.3f}deg{suffix}")
+    return " ".join(parts)
 
 
 def frame_pose_and_jacobian(model, data, frame_id: int, q: np.ndarray):
@@ -551,9 +676,9 @@ def solve_point_dls_ik(
     )
 
 
-def q_is_duplicate(q: np.ndarray, existing: list[np.ndarray], duplicate_deg: float) -> bool:
-    threshold = math.radians(max(float(duplicate_deg), 1.0e-6))
-    return any(float(np.linalg.norm(q - other, ord=np.inf)) <= threshold for other in existing)
+def q_is_duplicate(q: np.ndarray, existing: list[np.ndarray], threshold: np.ndarray) -> bool:
+    """관절별 임계값(직동 m, 회전 rad) 안에 들어오면 같은 해로 본다."""
+    return any(bool(np.all(np.abs(q - other) <= threshold)) for other in existing)
 
 
 def add_unique_seed(
@@ -561,14 +686,28 @@ def add_unique_seed(
     q: np.ndarray,
     lower: np.ndarray,
     upper: np.ndarray,
-    duplicate_deg: float,
+    threshold: np.ndarray,
     max_count: int,
 ) -> None:
     if len(seeds) >= max_count:
         return
     q = np.clip(np.asarray(q, dtype=float).reshape(-1), lower, upper)
-    if not q_is_duplicate(q, seeds, duplicate_deg):
+    if not q_is_duplicate(q, seeds, threshold):
         seeds.append(q)
+
+
+def expand_seed_offset(offset: tuple[float, ...], prismatic: np.ndarray) -> np.ndarray:
+    """6축 회전 시드 오프셋(deg)을 모델 전체 관절 벡터(rad)로 편다.
+
+    IK_SEED_OFFSETS_DEG 는 A0912 6축 팔의 손목/팔꿈치 뒤집기를 노린 값이라
+    회전축에만 의미가 있다. 갠트리 직동축에는 0 을 넣는다 — 직동축은 여분
+    자유도라 이전 해 warm start 로 충분히 움직인다.
+    """
+    full = np.zeros(prismatic.shape[0], dtype=float)
+    revolute_indices = np.flatnonzero(~prismatic)
+    count = min(len(offset), len(revolute_indices))
+    full[revolute_indices[:count]] = np.radians(np.asarray(offset[:count], dtype=float))
+    return full
 
 
 def build_seed_bank(
@@ -579,19 +718,19 @@ def build_seed_bank(
     args: argparse.Namespace,
 ) -> list[np.ndarray]:
     max_seeds = max(1, int(args.ik_max_seeds_per_point))
-    duplicate_deg = float(args.ik_duplicate_candidate_deg)
-    offsets = [np.radians(np.array(offset, dtype=float)) for offset in IK_SEED_OFFSETS_DEG]
+    threshold = args.joint_duplicate_threshold
+    offsets = [expand_seed_offset(offset, args.joint_prismatic) for offset in IK_SEED_OFFSETS_DEG]
     seeds: list[np.ndarray] = []
 
     for candidate in previous_candidates:
-        add_unique_seed(seeds, candidate.q, lower, upper, duplicate_deg, max_seeds)
+        add_unique_seed(seeds, candidate.q, lower, upper, threshold, max_seeds)
 
     for offset in offsets:
-        add_unique_seed(seeds, initial_q + offset, lower, upper, duplicate_deg, max_seeds)
+        add_unique_seed(seeds, initial_q + offset, lower, upper, threshold, max_seeds)
 
     for candidate in previous_candidates[:3]:
         for offset in offsets:
-            add_unique_seed(seeds, candidate.q + offset, lower, upper, duplicate_deg, max_seeds)
+            add_unique_seed(seeds, candidate.q + offset, lower, upper, threshold, max_seeds)
 
     return seeds
 
@@ -662,9 +801,10 @@ def generate_point_candidates(
     lower: np.ndarray,
     upper: np.ndarray,
     args: argparse.Namespace,
+    dt: float = 0.0,
 ) -> list[IkCandidate]:
     seeds = build_seed_bank(initial_q, previous_candidates, lower, upper, args)
-    duplicate_deg = float(args.ik_duplicate_candidate_deg)
+    duplicate_threshold = args.joint_duplicate_threshold
     candidates: list[IkCandidate] = []
     rejected: list[IkCandidate] = []
     candidate_qs: list[np.ndarray] = []
@@ -683,7 +823,7 @@ def generate_point_candidates(
         if not result.converged:
             continue
         candidate = make_candidate_from_result(model, data, frame_id, point, result, seed_index)
-        if q_is_duplicate(candidate.q, candidate_qs, duplicate_deg):
+        if q_is_duplicate(candidate.q, candidate_qs, duplicate_threshold):
             continue
         candidate_qs.append(candidate.q)
         if candidate_is_valid(candidate, args):
@@ -692,9 +832,50 @@ def generate_point_candidates(
             rejected.append(candidate)
 
     candidates.sort(key=lambda candidate: candidate_quality_cost(candidate, model, args))
-    candidates = candidates[: max(1, int(args.ik_max_candidates_per_point))]
-    if candidates:
-        return candidates
+    keep = max(1, int(args.ik_max_candidates_per_point))
+
+    # 여유자유도(8축 셀) 대응: candidate_quality_cost 는 추종오차/특이점/한계여유만 보고
+    # **이전 점과의 연속성은 보지 않는다**. 8축은 널스페이스가 2차원이라 DLS가 갠트리를
+    # 제각각인 위치에 해를 놓는데, 정적 품질 상위 N개만 남기면 매끄러운 연결해가
+    # 잘려나가 DP가 "no feasible connection" 으로 막힌다 (실측: TCP 가 8mm 움직이는
+    # 구간에서 남은 후보들의 gantry_y 최소 변화량이 63mm).
+    # 그래서 이전 점 후보마다 가장 가까운 현재 후보를 강제로 살려둔다.
+    # 6축 회전 전용 모델은 auto 에서 0 이라 예전과 동일하게 동작한다.
+    # 여유자유도(8축 셀) 대응: **연속 트랙을 먼저 채우고** 남는 자리만 품질 상위로 채운다.
+    # 품질 상위 N개를 먼저 넣고 연속해를 덧붙이면, 목록 상한에서 다시 연속해가
+    # 잘려나가 DP 그래프가 끊긴다 (실측: 자를 때마다 실패 지점이 4->5->6->7 로
+    # 한 점씩 밀릴 뿐 끝까지 못 간다).
+    # 이전 후보 수 == keep 이므로 연속 트랙이 목록을 정확히 채우고, 그 결과
+    # "모든 후보가 다음 점에 이어질 상대를 갖는다"가 구조적으로 보장된다.
+    keep_continuations = int(getattr(args, "ik_keep_continuations", 0))
+    selected: list[IkCandidate] = []
+    chosen: set[int] = set()
+    if keep_continuations > 0 and previous_candidates:
+        # DP를 통과하려면 점프 한계와 속도*dt 중 **더 빡빡한 쪽**을 봐야 한다.
+        # 점프 한계로만 고르면 속도에서 걸리는 후보를 집어올 수 있다.
+        effective = args.joint_step_limit
+        if dt > 0.0:
+            effective = np.minimum(effective, args.joint_velocity_limit * dt)
+        scale = np.maximum(effective, 1.0e-12)
+        for reference in previous_candidates[:keep_continuations]:
+            distances = [
+                float(np.max(np.abs(candidate.q - reference.q) / scale)) for candidate in candidates
+            ]
+            nearest = candidates[int(np.argmin(distances))]
+            if id(nearest) not in chosen:
+                selected.append(nearest)
+                chosen.add(id(nearest))
+
+    for candidate in candidates:
+        if len(selected) >= keep:
+            break
+        if id(candidate) not in chosen:
+            selected.append(candidate)
+            chosen.add(id(candidate))
+
+    selected.sort(key=lambda candidate: candidate_quality_cost(candidate, model, args))
+    if selected:
+        return selected
 
     rejected.sort(
         key=lambda candidate: (
@@ -725,8 +906,8 @@ def transition_cost(
     dt = max(float(dt), 1.0e-9)
     dq = cur.q - prev.q
     velocity = dq / dt
-    jump_limit = math.radians(max(float(args.max_joint_step_deg), 1.0e-6))
-    velocity_limit = math.radians(max(float(args.max_joint_velocity_deg_s), 1.0e-6))
+    jump_limit = np.maximum(args.joint_step_limit, 1.0e-6)
+    velocity_limit = np.maximum(args.joint_velocity_limit, 1.0e-6)
     jump_ratio = dq / jump_limit
     velocity_ratio = velocity / velocity_limit
     hard_velocity_excess = np.maximum(0.0, np.abs(velocity_ratio) - 1.0)
@@ -744,11 +925,10 @@ def transition_is_feasible(
     args: argparse.Namespace,
 ) -> bool:
     dt = max(float(dt), 1.0e-9)
-    dq_deg = max_abs_deg((cur.q - prev.q).reshape(1, -1))
-    velocity_deg = max_abs_deg(((cur.q - prev.q) / dt).reshape(1, -1))
-    return (
-        dq_deg <= float(args.max_joint_step_deg)
-        and velocity_deg <= float(args.max_joint_velocity_deg_s)
+    dq = np.abs(cur.q - prev.q)
+    return bool(
+        np.all(dq <= args.joint_step_limit)
+        and np.all(dq / dt <= args.joint_velocity_limit)
     )
 
 
@@ -765,7 +945,7 @@ def acceleration_cost(
     prev_velocity = (prev.q - prev_prev.q) / prev_dt
     cur_velocity = (cur.q - prev.q) / cur_dt
     acceleration = 2.0 * (cur_velocity - prev_velocity) / (prev_dt + cur_dt)
-    acceleration_limit = math.radians(max(float(args.max_joint_acceleration_deg_s2), 1.0e-6))
+    acceleration_limit = np.maximum(args.joint_acceleration_limit, 1.0e-6)
     acceleration_ratio = acceleration / acceleration_limit
     hard_acceleration_excess = np.maximum(0.0, np.abs(acceleration_ratio) - 1.0)
     return (
@@ -787,7 +967,7 @@ def acceleration_is_feasible(
     prev_velocity = (prev.q - prev_prev.q) / prev_dt
     cur_velocity = (cur.q - prev.q) / cur_dt
     acceleration = 2.0 * (cur_velocity - prev_velocity) / (prev_dt + cur_dt)
-    return max_abs_deg(acceleration.reshape(1, -1)) <= float(args.max_joint_acceleration_deg_s2)
+    return bool(np.all(np.abs(acceleration) <= args.joint_acceleration_limit))
 
 
 def select_candidate_path_dp(
@@ -893,6 +1073,7 @@ def solve_dls_ik_path(
                 lower=lower,
                 upper=upper,
                 args=args,
+                dt=(point.t - points[index - 1].t) if index > 0 else 0.0,
             )
         except RuntimeError as error:
             raise RuntimeError(f"DLS IK candidate generation failed at point {index + 1}/{len(points)}: {error}") from error
@@ -972,27 +1153,29 @@ def check_joint_path(
             f"upper_margin={math.degrees(upper_margin):.3f}deg"
         )
 
+    # 관절별 한계 벡터로 비교한다. 직동축은 m 계열, 회전축은 rad 계열이라
+    # 예전처럼 전 축을 deg 로 뭉뚱그리면 갠트리 축이 잘못 판정된다.
+    prismatic = args.joint_prismatic
+
+    def _worst(values: np.ndarray, limit: np.ndarray, label: str, unit: str) -> None:
+        if values.size == 0:
+            return
+        peak = np.max(np.abs(values), axis=0)
+        over = peak > limit
+        if not np.any(over):
+            return
+        index = int(np.argmax(peak / np.maximum(limit, 1.0e-12)))
+        scale = 1.0 if prismatic[index] else 180.0 / math.pi
+        native = "m" if prismatic[index] else "deg"
+        violations.append(
+            f"{label} too large joint{index + 1} max={peak[index] * scale:.3f}{native}{unit} "
+            f"limit={limit[index] * scale:.3f}{native}{unit}"
+        )
+
     if len(q_solution) > 1:
-        max_jump_deg = float(np.max(np.abs(np.degrees(np.diff(q_solution, axis=0)))))
-    else:
-        max_jump_deg = 0.0
-    if max_jump_deg > float(args.max_joint_step_deg):
-        violations.append(
-            f"joint jump too large max={max_jump_deg:.3f}deg limit={args.max_joint_step_deg:.3f}deg"
-        )
-
-    max_qdot_deg = float(np.max(np.abs(np.degrees(qd_solution)))) if qd_solution.size else 0.0
-    if max_qdot_deg > float(args.max_joint_velocity_deg_s):
-        violations.append(
-            f"qdot too large max={max_qdot_deg:.3f}deg/s limit={args.max_joint_velocity_deg_s:.3f}deg/s"
-        )
-
-    max_qddot_deg = float(np.max(np.abs(np.degrees(qdd_solution)))) if qdd_solution.size else 0.0
-    if max_qddot_deg > float(args.max_joint_acceleration_deg_s2):
-        violations.append(
-            f"qddot too large max={max_qddot_deg:.3f}deg/s^2 "
-            f"limit={args.max_joint_acceleration_deg_s2:.3f}deg/s^2"
-        )
+        _worst(np.diff(q_solution, axis=0), args.joint_step_limit, "joint jump", "")
+    _worst(qd_solution, args.joint_velocity_limit, "qdot", "/s")
+    _worst(qdd_solution, args.joint_acceleration_limit, "qddot", "/s^2")
 
     return violations
 
@@ -1016,6 +1199,39 @@ def max_joint_jump_deg(q_rad: np.ndarray) -> float:
     return max_abs_deg(np.diff(q_rad, axis=0))
 
 
+def worst_limit_ratio(
+    values: np.ndarray, limit: np.ndarray, prismatic: np.ndarray
+) -> tuple[bool, str]:
+    """관절별 한계 대비 최악 축을 찾아 (통과여부, 표시문자열)을 돌려준다.
+
+    직동축은 m, 회전축은 deg 로 각자 단위로 찍는다.
+    """
+    if values.size == 0:
+        return True, "n/a"
+    peak = np.max(np.abs(values), axis=0)
+    ratios = peak / np.maximum(limit, 1.0e-12)
+    index = int(np.argmax(ratios))
+    scale = 1.0 if prismatic[index] else 180.0 / math.pi
+    unit = "m" if prismatic[index] else "deg"
+    ok = bool(np.all(peak <= limit))
+    return ok, (
+        f"worst=joint{index + 1} max={peak[index] * scale:.3f}{unit} "
+        f"limit={limit[index] * scale:.3f}{unit}"
+    )
+
+
+def joint_limit_margin_detail(model, q_rad: np.ndarray, prismatic: np.ndarray) -> tuple[bool, str]:
+    """관절 한계 여유 중 가장 빠듯한 축을 각자 단위로 표시한다."""
+    lower, upper = finite_limits(model)
+    margins = np.minimum(q_rad - lower.reshape(1, -1), upper.reshape(1, -1) - q_rad)
+    per_joint = np.min(margins, axis=0)
+    index = int(np.argmin(per_joint))
+    scale = 1.0 if prismatic[index] else 180.0 / math.pi
+    unit = "m" if prismatic[index] else "deg"
+    ok = bool(per_joint[index] >= -1.0e-4)
+    return ok, f"tightest=joint{index + 1} margin={per_joint[index] * scale:.3f}{unit}"
+
+
 def format_check_line(label: str, ok: bool, detail: str) -> str:
     status = "OK" if ok else "FAIL"
     return f"[ik][summary]   {label:<22} {status}  {detail}"
@@ -1037,25 +1253,28 @@ def build_path_summary_lines(
     command_qdd: np.ndarray,
     args: argparse.Namespace,
 ) -> None:
-    source_lower_margin_deg, source_upper_margin_deg = joint_limit_margins_deg(model, q_solution)
-    command_lower_margin_deg, command_upper_margin_deg = joint_limit_margins_deg(model, command_q)
-    source_jump_deg = max_joint_jump_deg(q_solution)
-    command_jump_deg = max_joint_jump_deg(command_q)
-    source_qdot_deg = max_abs_deg(qd_solution)
-    source_qddot_deg = max_abs_deg(qdd_solution)
-    command_qdot_deg = max_abs_deg(command_qd)
-    command_qddot_deg = max_abs_deg(command_qdd)
+    prismatic = args.joint_prismatic
+    source_limit_ok, source_limit_detail = joint_limit_margin_detail(model, q_solution, prismatic)
+    command_limit_ok, command_limit_detail = joint_limit_margin_detail(model, command_q, prismatic)
+    source_jump_ok, source_jump_detail = worst_limit_ratio(
+        np.diff(q_solution, axis=0) if len(q_solution) > 1 else np.empty((0, len(prismatic))),
+        args.joint_step_limit, prismatic,
+    )
+    command_jump_ok, command_jump_detail = worst_limit_ratio(
+        np.diff(command_q, axis=0) if len(command_q) > 1 else np.empty((0, len(prismatic))),
+        args.joint_step_limit, prismatic,
+    )
+    source_velocity_ok, source_velocity_detail = worst_limit_ratio(
+        qd_solution, args.joint_velocity_limit, prismatic)
+    command_velocity_ok, command_velocity_detail = worst_limit_ratio(
+        command_qd, args.joint_velocity_limit, prismatic)
+    source_acceleration_ok, source_acceleration_detail = worst_limit_ratio(
+        qdd_solution, args.joint_acceleration_limit, prismatic)
+    command_acceleration_ok, command_acceleration_detail = worst_limit_ratio(
+        command_qdd, args.joint_acceleration_limit, prismatic)
 
     tracking_position_ok = metrics["max_position_error_m"] <= float(args.position_tolerance)
     tracking_orientation_ok = metrics["max_orientation_error_deg"] <= float(args.orientation_tolerance_deg)
-    source_joint_limit_ok = source_lower_margin_deg >= -1.0e-4 and source_upper_margin_deg >= -1.0e-4
-    command_joint_limit_ok = command_lower_margin_deg >= -1.0e-4 and command_upper_margin_deg >= -1.0e-4
-    source_jump_ok = source_jump_deg <= float(args.max_joint_step_deg)
-    command_jump_ok = command_jump_deg <= float(args.max_joint_step_deg)
-    source_velocity_ok = source_qdot_deg <= float(args.max_joint_velocity_deg_s)
-    command_velocity_ok = command_qdot_deg <= float(args.max_joint_velocity_deg_s)
-    source_acceleration_ok = source_qddot_deg <= float(args.max_joint_acceleration_deg_s2)
-    command_acceleration_ok = command_qddot_deg <= float(args.max_joint_acceleration_deg_s2)
     singular_value_ok = metrics["min_sigma"] >= float(args.min_singular_value)
     manipulability_ok = (
         args.min_manipulability <= 0.0
@@ -1073,46 +1292,16 @@ def build_path_summary_lines(
         tracking_orientation_ok,
         f"max={metrics['max_orientation_error_deg']:.4f}deg limit={args.orientation_tolerance_deg:.4f}deg",
     ))
+    lines.append(format_check_line("joint limit source", source_limit_ok, source_limit_detail))
+    lines.append(format_check_line("joint limit command", command_limit_ok, command_limit_detail))
+    lines.append(format_check_line("joint jump source", source_jump_ok, source_jump_detail))
+    lines.append(format_check_line("joint jump command", command_jump_ok, command_jump_detail))
+    lines.append(format_check_line("velocity source", source_velocity_ok, source_velocity_detail))
+    lines.append(format_check_line("velocity command", command_velocity_ok, command_velocity_detail))
     lines.append(format_check_line(
-        "joint limit source",
-        source_joint_limit_ok,
-        f"lower_margin={source_lower_margin_deg:.3f}deg upper_margin={source_upper_margin_deg:.3f}deg",
-    ))
+        "acceleration source", source_acceleration_ok, source_acceleration_detail))
     lines.append(format_check_line(
-        "joint limit command",
-        command_joint_limit_ok,
-        f"lower_margin={command_lower_margin_deg:.3f}deg upper_margin={command_upper_margin_deg:.3f}deg",
-    ))
-    lines.append(format_check_line(
-        "joint jump source",
-        source_jump_ok,
-        f"max={source_jump_deg:.3f}deg limit={args.max_joint_step_deg:.3f}deg",
-    ))
-    lines.append(format_check_line(
-        "joint jump command",
-        command_jump_ok,
-        f"max={command_jump_deg:.3f}deg limit={args.max_joint_step_deg:.3f}deg",
-    ))
-    lines.append(format_check_line(
-        "velocity source",
-        source_velocity_ok,
-        f"max={source_qdot_deg:.3f}deg/s limit={args.max_joint_velocity_deg_s:.3f}deg/s",
-    ))
-    lines.append(format_check_line(
-        "velocity command",
-        command_velocity_ok,
-        f"max={command_qdot_deg:.3f}deg/s limit={args.max_joint_velocity_deg_s:.3f}deg/s",
-    ))
-    lines.append(format_check_line(
-        "acceleration source",
-        source_acceleration_ok,
-        f"max={source_qddot_deg:.3f}deg/s^2 limit={args.max_joint_acceleration_deg_s2:.3f}deg/s^2",
-    ))
-    lines.append(format_check_line(
-        "acceleration command",
-        command_acceleration_ok,
-        f"max={command_qddot_deg:.3f}deg/s^2 limit={args.max_joint_acceleration_deg_s2:.3f}deg/s^2",
-    ))
+        "acceleration command", command_acceleration_ok, command_acceleration_detail))
     lines.append(format_check_line(
         "singular value",
         singular_value_ok,
@@ -1144,16 +1333,40 @@ def write_joint_csv(
     q_rad: np.ndarray,
     qd_rad: np.ndarray,
     qdd_rad: np.ndarray,
+    prismatic: np.ndarray | None = None,
+    joint_names: list[str] | None = None,
 ) -> None:
-    output_csv.parent.mkdir(parents=True, exist_ok=True)
-    q_deg = np.degrees(q_rad)
-    qd_deg = np.degrees(qd_rad)
-    qdd_deg = np.degrees(qdd_rad)
+    """관절 궤적을 CSV로 저장한다.
 
-    header = ["t", "s"]
-    header += [f"q{index}" for index in range(1, q_rad.shape[1] + 1)]
-    header += [f"qd{index}" for index in range(1, q_rad.shape[1] + 1)]
-    header += [f"qdd{index}" for index in range(1, q_rad.shape[1] + 1)]
+    회전 전용(6축 실기) 모델이면 예전 그대로 전 축 deg 의 `q1..qN` 형식이다 —
+    로봇 실행 경로가 이 형식을 읽으므로 바꾸면 안 된다.
+    직동축이 섞인 8축 셀이면 deg 단일 단위를 쓸 수 없어 SI(회전 rad, 직동 m)로
+    쓰고, 컬럼 이름을 실제 관절 이름으로 준다 (paint_viz 의 solve_viz_ik 형식과
+    같은 규약이라 RViz 재생 노드가 그대로 읽는다). 미분값은 `qd_`/`qdd_` 접두어로
+    구분해 재생 노드가 관절 컬럼과 헷갈리지 않게 한다.
+    """
+    output_csv.parent.mkdir(parents=True, exist_ok=True)
+    joint_count = q_rad.shape[1]
+    if prismatic is None:
+        prismatic = np.zeros(joint_count, dtype=bool)
+    mixed = bool(np.any(prismatic))
+
+    if mixed:
+        scale = np.ones(joint_count)
+        names = list(joint_names) if joint_names else [f"q{i + 1}" for i in range(joint_count)]
+        header = ["t", "s"] + names
+        header += [f"qd_{name}" for name in names]
+        header += [f"qdd_{name}" for name in names]
+    else:
+        scale = np.full(joint_count, 180.0 / math.pi)
+        header = ["t", "s"]
+        header += [f"q{index + 1}" for index in range(joint_count)]
+        header += [f"qd{index + 1}" for index in range(joint_count)]
+        header += [f"qdd{index + 1}" for index in range(joint_count)]
+
+    q_out = q_rad * scale
+    qd_out = qd_rad * scale
+    qdd_out = qdd_rad * scale
 
     with output_csv.open("w", newline="", encoding="utf-8") as stream:
         writer = csv.writer(stream)
@@ -1161,9 +1374,9 @@ def write_joint_csv(
         for index, t in enumerate(times):
             writer.writerow(
                 [f"{t:.9f}", f"{arc_lengths[index]:.9f}"]
-                + [f"{value:.9f}" for value in q_deg[index]]
-                + [f"{value:.9f}" for value in qd_deg[index]]
-                + [f"{value:.9f}" for value in qdd_deg[index]]
+                + [f"{value:.9f}" for value in q_out[index]]
+                + [f"{value:.9f}" for value in qd_out[index]]
+                + [f"{value:.9f}" for value in qdd_out[index]]
             )
 
 
@@ -1246,12 +1459,104 @@ def run_robot(outputs: list[Path], args: argparse.Namespace) -> None:
         time.sleep(1.0)
 
 
+# --- 갠트리 환경 (paint_viz config/gantry/<name>.yaml) ----------------------------------------
+# --gantry-env 를 주면 URDF 기본값과 plan_metadata.json 의 환경 치수를 거기서 가져온다. paint_viz 가
+# import 되지 않는 환경(실기 6축 전용 PC)에서는 yaml 경로를 직접 줄 수 있고, 없으면 None 으로 둔다.
+def load_gantry_env_or_none(name_or_path: str | None):
+    if not name_or_path:
+        return None
+    try:
+        from paint_viz.gantry_env import load_gantry_env
+        return load_gantry_env(name_or_path)
+    except ImportError:
+        path = Path(name_or_path).expanduser()
+        if not path.is_file():
+            raise RuntimeError(
+                f"--gantry-env {name_or_path!r}: paint_viz 를 import 할 수 없고 yaml 경로도 아니다 "
+                "(paint_cell_ws 를 source 하거나 yaml 경로를 직접 줄 것)")
+        import yaml
+
+        class _RawEnv:
+            def __init__(self, data, path):
+                self.data = data
+                self.path = path
+                self.name = str(data.get("name") or path.stem)
+
+            def get(self, dotted, default=None):
+                node = self.data
+                for key in dotted.split("."):
+                    if not isinstance(node, dict) or key not in node:
+                        return default
+                    node = node[key]
+                return node
+
+            def urdf_path(self, kind="primitive"):
+                return path.parents[2] / "urdf" / str(self.data["urdf"][kind])
+
+            def metadata(self):
+                return {"name": self.name, "config_file": str(self.path), "raw": self.data}
+
+        with open(path, "r", encoding="utf-8") as stream:
+            loaded = yaml.safe_load(stream) or {}
+        return _RawEnv(loaded.get("gantry_env", loaded), path)
+
+
+def write_plan_metadata(output_dir: Path, script_name: str, args: argparse.Namespace, env,
+                        urdf_path: Path, joint_names: list[str], inputs: list[Path],
+                        outputs: list[Path], extra: dict | None = None) -> Path:
+    """출력 디렉터리에 plan_metadata.json 을 쓴다 — 어떤 환경/URDF/배치로 만든 CSV 인지 추적용."""
+    import datetime
+    import json
+
+    def jsonable(value):
+        if isinstance(value, Path):
+            return str(value)
+        if isinstance(value, np.ndarray):
+            return value.tolist()
+        if isinstance(value, (list, tuple)):
+            return [jsonable(v) for v in value]
+        if isinstance(value, dict):
+            return {str(k): jsonable(v) for k, v in value.items()}
+        if isinstance(value, (np.floating, np.integer)):
+            return value.item()
+        return value
+
+    skip = {"csv", "execute"}
+    metadata = {
+        "script": script_name,
+        "generated_at": datetime.datetime.now().astimezone().isoformat(timespec="seconds"),
+        "gantry_env": env.metadata() if env is not None else None,
+        "urdf": str(urdf_path),
+        "tcp_frame": args.tcp_frame,
+        "joint_names": list(joint_names),
+        "part_xyz": [float(v) for v in str(args.part_xyz).split(",")],
+        "part_rpy": [float(v) for v in str(args.part_rpy).split(",")],
+        "initial_joint": args.initial_joint_deg,
+        "inputs": [str(p) for p in inputs],
+        "outputs": [str(p) for p in outputs],
+        "args": {k: jsonable(v) for k, v in sorted(vars(args).items())
+                 if k not in skip and not k.endswith("_obj") and not isinstance(v, np.ndarray)},
+    }
+    if extra:
+        metadata.update(jsonable(extra))
+    output_dir = Path(output_dir)
+    output_dir.mkdir(parents=True, exist_ok=True)
+    path = output_dir / "plan_metadata.json"
+    with open(path, "w", encoding="utf-8") as stream:
+        json.dump(metadata, stream, ensure_ascii=False, indent=2)
+    return path
+
+
 def parse_args(argv: list[str]) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="Offline Pinocchio DLS IK trajectory generation for A0912 Cartesian painting CSVs."
     )
     parser.add_argument("csv", nargs="*", type=Path, help="Input trajectory_XXX.csv file(s).")
-    parser.add_argument("--urdf", type=Path, default=DEFAULT_URDF)
+    parser.add_argument("--urdf", type=Path, default=None,
+                        help=f"URDF. 기본: --gantry-env 가 있으면 그 환경의 8축 URDF, 없으면 {DEFAULT_URDF.name} (6축)")
+    parser.add_argument("--gantry-env", default=None,
+                        help="갠트리 환경 이름(legacy|spec_c|x7y4z3) 또는 config/gantry/*.yaml 경로. "
+                             "URDF 기본값과 plan_metadata.json 의 환경 정보에 쓴다")
     parser.add_argument("--tcp-frame", default=TCP_FRAME)
     parser.add_argument("--output", type=Path, default=DEFAULT_OUTPUT_DIR)
     parser.add_argument("--stride", type=int, default=1)
@@ -1264,6 +1569,19 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
     parser.add_argument("--max-joint-step-deg", type=float, default=MAX_JOINT_STEP_DEG)
     parser.add_argument("--max-joint-velocity-deg-s", type=float, default=MAX_JOINT_VELOCITY_DEG_S)
     parser.add_argument("--max-joint-acceleration-deg-s2", type=float, default=MAX_JOINT_ACCELERATION_DEG_S2)
+    parser.add_argument("--max-gantry-step-m", type=float, default=MAX_GANTRY_STEP_M,
+                        help="갠트리 직동축 점프 한계 [m] (8축 셀 URDF에서만 쓰임)")
+    parser.add_argument("--max-gantry-velocity-m-s", type=float, default=MAX_GANTRY_VELOCITY_M_S,
+                        help="갠트리 직동축 속도 한계 [m/s]")
+    parser.add_argument("--max-gantry-acceleration-m-s2", type=float,
+                        default=MAX_GANTRY_ACCELERATION_M_S2,
+                        help="갠트리 직동축 가속도 한계 [m/s^2]")
+    parser.add_argument("--ik-duplicate-candidate-m", type=float, default=IK_DUPLICATE_CANDIDATE_M,
+                        help="직동축 중복 후보 판정 임계값 [m]")
+    parser.add_argument("--part-xyz", default=PART_XYZ,
+                        help="부품 스캔 좌표계를 로봇 월드로 옮기는 평행이동 'x,y,z' [m]")
+    parser.add_argument("--part-rpy", default=PART_RPY,
+                        help="부품 스캔 좌표계를 로봇 월드로 옮기는 고정축 회전 'r,p,y' [rad]")
     parser.add_argument("--min-manipulability", type=float, default=MIN_MANIPULABILITY)
     parser.add_argument("--min-singular-value", type=float, default=MIN_SINGULAR_VALUE)
     parser.add_argument("--ik-max-iter", type=int, default=IK_MAX_ITER)
@@ -1275,6 +1593,9 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
     parser.add_argument("--ik-max-seeds-per-point", type=int, default=IK_MAX_SEEDS_PER_POINT)
     parser.add_argument("--ik-max-candidates-per-point", type=int, default=IK_MAX_CANDIDATES_PER_POINT)
     parser.add_argument("--ik-duplicate-candidate-deg", type=float, default=IK_DUPLICATE_CANDIDATE_DEG)
+    parser.add_argument("--ik-keep-continuations", type=int, default=-1,
+                        help="이전 점 후보마다 가장 가까운 현재 후보를 강제로 남기는 개수. "
+                             "-1이면 auto (여유자유도 모델 4, 6축 팔 0)")
     parser.add_argument("--dp-tracking-weight", type=float, default=DP_TRACKING_WEIGHT)
     parser.add_argument("--dp-jump-weight", type=float, default=DP_JUMP_WEIGHT)
     parser.add_argument("--dp-velocity-weight", type=float, default=DP_VELOCITY_WEIGHT)
@@ -1309,9 +1630,14 @@ def main(argv: list[str] | None = None) -> int:
     for csv_path in input_csvs:
         if not csv_path.is_file():
             raise FileNotFoundError(csv_path)
+    gantry_env = load_gantry_env_or_none(args.gantry_env)
+    if args.urdf is None:
+        args.urdf = Path(gantry_env.urdf_path("primitive")) if gantry_env is not None else DEFAULT_URDF
     urdf_path = args.urdf.expanduser().resolve()
     if not urdf_path.is_file():
         raise FileNotFoundError(urdf_path)
+    if gantry_env is not None:
+        print(f"[ik] gantry env: {gantry_env.name} ({gantry_env.path})")
 
     parse_signed_axis(args.tcp_spray_axis)
     parse_signed_axis(args.tcp_path_axis)
@@ -1319,20 +1645,48 @@ def main(argv: list[str] | None = None) -> int:
         raise ValueError("--tcp-spray-axis and --tcp-path-axis must use different axes")
 
     model, data, frame_id = create_pinocchio_model(urdf_path, args.tcp_frame)
-    if model.nq != 6:
-        raise ValueError(f"controller currently expects 6 joints, but Pinocchio model has nq={model.nq}")
+    args.tcp_frame = model.frames[frame_id].name
+    args = attach_joint_motion_limits(model, args)
+    has_gantry = bool(np.any(args.joint_prismatic))
+    if model.nq != 6 and not has_gantry:
+        raise ValueError(
+            f"expected a 6-joint arm or a gantry model with prismatic joints, got nq={model.nq}"
+        )
+    if args.execute and model.nq != 6:
+        # DRFL 은 두산 6축만 명령한다. 갠트리 직동축은 별도 구동계라 이 스크립트로 못 움직인다.
+        raise ValueError(
+            f"--execute is only supported for the 6-joint arm (nq={model.nq}). "
+            "The gantry prismatic axes need their own drive; this script cannot command them."
+        )
 
-    initial_q = np.radians(np.array(parse_float_list(args.initial_joint_deg, model.nq, "--initial-joint-deg")))
+    # 회전축은 deg, 직동축은 m 로 적는다.
+    if (gantry_env is not None and model.nq != 6 and args.initial_joint_deg == INITIAL_JOINT_DEG
+            and gantry_env.get("nlp.initial_joint")):
+        # 6축 기본값을 8축 환경에 그대로 쓰면 개수가 안 맞는다 — env yaml 의 초기 자세(갠트리 중앙)를 쓴다
+        args.initial_joint_deg = str(gantry_env.get("nlp.initial_joint"))
+        print(f"[ik] initial joint from gantry env: {args.initial_joint_deg}")
+    initial_values = np.array(parse_float_list(args.initial_joint_deg, model.nq, "--initial-joint-deg"))
+    initial_q = np.where(args.joint_prismatic, initial_values, np.radians(initial_values))
     seed_initial_q = initial_q.copy()
+
+    part_translation = np.array(parse_float_list(args.part_xyz, 3, "--part-xyz"), dtype=float)
+    part_rpy = parse_float_list(args.part_rpy, 3, "--part-rpy")
+    part_rotation = rpy_to_matrix(*part_rpy)
 
     joint_names = [model.names[index] for index in range(1, model.njoints)]
     print(f"[ik] URDF: {urdf_path}")
     print(f"[ik] joints: {', '.join(joint_names)}")
+    print(f"[ik] prismatic joints: {int(np.sum(args.joint_prismatic))} of {model.nq}")
     print(f"[ik] TCP frame: {args.tcp_frame}")
     print(f"[ik] TCP spray axis: {args.tcp_spray_axis} path axis: {args.tcp_path_axis}")
+    print(f"[ik] part placement xyz={part_translation.tolist()} rpy={part_rpy}")
     print(f"[ik] output: {args.output}")
 
+    total_start = time.perf_counter()
+    timing_rows: list[tuple[str, int, float, float]] = []
+
     command_outputs = []
+    joint_outputs = []
     pending_violations: list[str] = []
     path_summaries: list[list[str]] = []
     for csv_index, input_csv in enumerate(input_csvs, start=1):
@@ -1343,13 +1697,23 @@ def main(argv: list[str] | None = None) -> int:
             max_points=args.max_points,
             tcp_spray_axis=args.tcp_spray_axis,
             tcp_path_axis=args.tcp_path_axis,
+            part_rotation=part_rotation,
+            part_translation=part_translation,
         )
         print(
             f"[ik] loaded points={len(points)} duration={points[-1].t:.3f}s "
             f"stride={args.stride} max_points={args.max_points}"
         )
 
+        solve_start = time.perf_counter()
         q_solution = solve_dls_ik_path(model, data, frame_id, points, seed_initial_q, args)
+        solve_elapsed = time.perf_counter() - solve_start
+        timing_rows.append((input_csv.name, len(points), solve_elapsed, points[-1].t))
+        print(
+            f"[ik][time] plan {solve_elapsed:.2f}s for {len(points)} points "
+            f"({1000.0 * solve_elapsed / max(len(points), 1):.1f} ms/point), "
+            f"path duration {points[-1].t:.2f}s"
+        )
         seed_initial_q = q_solution[-1].copy()
         metrics = evaluate_solution(model, data, frame_id, points, q_solution)
         times = np.array([point.t for point in points], dtype=float)
@@ -1375,14 +1739,15 @@ def main(argv: list[str] | None = None) -> int:
             f"max_rot_err={metrics['max_orientation_error_deg']:.4f}deg "
             f"min_manip={metrics['min_manipulability']:.6e} "
             f"min_sigma={metrics['min_sigma']:.6e} "
-            f"max_qdot={np.max(np.abs(np.degrees(qd_solution))):.3f}deg/s "
-            f"max_qddot={np.max(np.abs(np.degrees(qdd_solution))):.3f}deg/s^2"
+            f"qdot[{worst_limit_ratio(qd_solution, args.joint_velocity_limit, args.joint_prismatic)[1]}] "
+            f"qddot[{worst_limit_ratio(qdd_solution, args.joint_acceleration_limit, args.joint_prismatic)[1]}]"
         )
         for violation in source_violations:
             print(f"[ik] check warning: source: {violation}")
 
         output_csv = output_path_for(input_csv, args.output, multiple=len(input_csvs) > 1)
-        write_joint_csv(output_csv, times, arc_lengths, q_solution, qd_solution, qdd_solution)
+        write_joint_csv(output_csv, times, arc_lengths, q_solution, qd_solution, qdd_solution,
+                        prismatic=args.joint_prismatic, joint_names=joint_names)
         print(f"[ik] saved IK joint trajectory: {output_csv}")
 
         command_times, command_arc, command_q, command_qd, command_qdd = build_command_trajectory(
@@ -1391,7 +1756,8 @@ def main(argv: list[str] | None = None) -> int:
             args.command_dt,
         )
         command_csv = command_output_path_for(input_csv, args.output, multiple=len(input_csvs) > 1)
-        write_joint_csv(command_csv, command_times, command_arc, command_q, command_qd, command_qdd)
+        write_joint_csv(command_csv, command_times, command_arc, command_q, command_qd, command_qdd,
+                        prismatic=args.joint_prismatic, joint_names=joint_names)
         command_qd_deg = np.degrees(command_qd)
         command_qdd_deg = np.degrees(command_qdd)
         command_violations = check_joint_path(model, command_q, command_qd, command_qdd, args)
@@ -1418,6 +1784,7 @@ def main(argv: list[str] | None = None) -> int:
             args=args,
         ))
         command_outputs.append(command_csv)
+        joint_outputs.append(output_csv)
 
     if path_summaries:
         print("[ik][summary] final result")
@@ -1425,6 +1792,32 @@ def main(argv: list[str] | None = None) -> int:
             if index > 1:
                 print("[ik][summary]")
             print_path_summary(summary_lines)
+
+    if timing_rows:
+        total_elapsed = time.perf_counter() - total_start
+        plan_total = sum(row[2] for row in timing_rows)
+        point_total = sum(row[1] for row in timing_rows)
+        path_total = sum(row[3] for row in timing_rows)
+        print("[ik][time] planning cost")
+        for name, count, elapsed, duration in timing_rows:
+            print(
+                f"[ik][time]   {name:28s} points={count:5d} plan={elapsed:8.2f}s "
+                f"({1000.0 * elapsed / max(count, 1):6.1f} ms/pt) path={duration:6.2f}s "
+                f"ratio={elapsed / max(duration, 1.0e-9):7.2f}x"
+            )
+        print(
+            f"[ik][time]   {'TOTAL':28s} points={point_total:5d} plan={plan_total:8.2f}s "
+            f"({1000.0 * plan_total / max(point_total, 1):6.1f} ms/pt) path={path_total:6.2f}s "
+            f"ratio={plan_total / max(path_total, 1.0e-9):7.2f}x"
+        )
+        print(
+            f"[ik][time]   wall clock (I/O + 후처리 포함) {total_elapsed:.2f}s"
+        )
+
+    metadata_path = write_plan_metadata(
+        args.output, Path(__file__).name, args, gantry_env, urdf_path, joint_names,
+        input_csvs, joint_outputs + command_outputs)
+    print(f"[ik] saved plan metadata: {metadata_path}")
 
     if args.execute:
         if pending_violations and not args.allow_check_failure:
