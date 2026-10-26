@@ -773,6 +773,64 @@ def _paint_surface_hit_mask_2d(
     return hit_mask
 
 
+def _row_slice_position(points_world, r_work, origin, slice_axis_idx, has_slice_profiles):
+    """row 의 slice 축 위치(작업 좌표계 median). 5단계 정렬 키와 같은 정의다. 뒤집기에 불변."""
+    r_work = np.asarray(r_work, float)
+    origin = np.asarray(origin, float).reshape(-1)
+    if r_work.shape != (3, 3) or origin.size != 3 or not has_slice_profiles:
+        return np.nan
+    row_work = (np.asarray(points_world, float) - origin.reshape(1, 3)) @ r_work
+    return float(np.median(row_work[:, int(slice_axis_idx)]))
+
+
+def _zigzag_flip_flags(
+    sampled_rows,
+    raster_zigzag,
+    r_work,
+    origin,
+    slice_axis_idx,
+    spline_start_side,
+    has_slice_profiles,
+):
+    """row 별 뒤집기 여부. 최종(5단계) 순서로 돌면서 이전 row 끝과 가까운 끝을 시작점으로 고른다.
+
+    홀짝 규칙과 달리 4단계/5단계 순서 불일치, 끝에 붙는 짧은 row, 조각 row 를 모두 같은 거리
+    기준으로 처리한다. 첫 row 는 자연 방향을 유지한다. raster_zigzag 가 꺼져 있으면 모두 False.
+    반환 순서는 입력(sampled_rows) 순서다.
+    """
+    count = len(sampled_rows)
+    flags = [False] * count
+    if not raster_zigzag or count < 2:
+        return flags
+
+    from painting_trajectory_planner_5_structuring import _ordered_row_indices
+
+    slice_positions = [
+        _row_slice_position(
+            sampled["points"], r_work, origin, slice_axis_idx, has_slice_profiles
+        )
+        for sampled in sampled_rows
+    ]
+    order = _ordered_row_indices(
+        {
+            "paint_spline_row_slice_positions": slice_positions,
+            "spline_start_side": spline_start_side,
+        },
+        count,
+    )
+
+    previous_end = None
+    for idx in order:
+        points = np.asarray(sampled_rows[idx]["points"], float)
+        if previous_end is not None:
+            flip = float(np.linalg.norm(points[-1] - previous_end)) < float(
+                np.linalg.norm(points[0] - previous_end)
+            )
+            flags[idx] = bool(flip)
+        previous_end = points[0] if flags[idx] else points[-1]
+    return flags
+
+
 def generate_paint_spline_rows(
     offset_result,
     paint_spline_point_spacing=0.01,
@@ -813,6 +871,14 @@ def generate_paint_spline_rows(
     row_slice_positions = []
     paint_spline_profiles = []
 
+    # 1패스: 모든 row 를 자연 방향(offset row 순서)으로 샘플링한다. 지그재그 뒤집기는 아직 하지 않는다.
+    #
+    # 예전에는 이 루프 안에서 "4단계 처리 순서가 홀수면 뒤집기"로 지그재그를 만들었다. 그런데 5단계
+    # (structure_painting_trajectory) 는 row 를 slice 위치로 다시 정렬하므로, 4단계 순서와 최종 순서가
+    # 다른 곳(ES300h_trunk row 11/12 가 맞바뀜)에서는 최종 순서 기준으로 같은 방향 row 가 연달아
+    # 나와 row 사이 전이가 1.5 m 로 튀었다(정상 50~90 mm). 그래서 최종 순서를 먼저 확정하고, 그
+    # 순서로 "이전 row 의 끝과 가까운 쪽 끝을 시작점으로" 방향을 고른다(_zigzag_flip_flags).
+    sampled_rows = []
     for row_idx, row in enumerate(offset_rows):
         anchor_points = np.asarray(row, float)
         if anchor_points.ndim != 2 or anchor_points.shape[1] != 3 or len(anchor_points) < 2:
@@ -826,9 +892,6 @@ def generate_paint_spline_rows(
         if anchor_dirs.shape != anchor_points.shape:
             anchor_dirs = np.repeat(default_direction.reshape(1, 3), len(anchor_points), axis=0)
 
-        trajectory_row_index = len(full_rows)
-        row_should_zigzag = bool(raster_zigzag) and trajectory_row_index % 2 == 1
-
         sampled = _sample_extended_spline_row_uniform(
             anchor_points,
             anchor_dirs,
@@ -838,6 +901,20 @@ def generate_paint_spline_rows(
         )
         if sampled is None:
             continue
+        sampled_rows.append((row_idx, sampled))
+
+    flip_flags = _zigzag_flip_flags(
+        [sampled for _row_idx, sampled in sampled_rows],
+        raster_zigzag=raster_zigzag,
+        r_work=r_work,
+        origin=origin,
+        slice_axis_idx=slice_axis_idx,
+        spline_start_side=result.get("spline_start_side", "top"),
+        has_slice_profiles=bool(slice_profiles),
+    )
+
+    # 2패스: 방향을 적용하고 기존 처리(분사 마스크, 프로파일)를 그대로 수행한다.
+    for (row_idx, sampled), row_should_zigzag in zip(sampled_rows, flip_flags):
         if row_should_zigzag:
             sampled = _reverse_sampled_row_for_zigzag(sampled)
 
