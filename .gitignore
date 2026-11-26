@@ -63,3 +63,6 @@ Thumbs.db
 
 # Do not globally exclude PLY/STL/JSON/CSV: model assets, test inputs and
 # src/hand_eye_calibration/results contain files needed by the project.
+
+# oh-my-claudecode 세션 상태 (로컬 전용)
+.omc/
