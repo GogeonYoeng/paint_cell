@@ -105,6 +105,36 @@ TOOL_CLEARANCE_JOINTS = "joint_3,joint_5"
 TOOL_TIP_OFFSET_M = "0.30,0,0"
 TOOL_CLEARANCE_M = 0.35
 TOOL_CLEARANCE_WEIGHT = 0.0
+# 부품 간섭 항: 팔을 관절 원점 사이 캡슐(반경 r)로 근사해 부품 점군과 r + clearance 이상 떨어지게 하는 소프트 페널티.
+# 세운 도어 상단 row 에서 link_3(팔꿈치)가 도어 윗단에 0.3~4 mm 까지 붙던 문제(2026-11-10). 0 이면 끔(기존 동작).
+# 캡슐 "관절A-관절B:반경" — 같은 관절이면 구. 노드마다 seed 자세 캡슐 근처 점만(최대 PART_CLEARANCE_MAX_POINTS) 쓴다.
+PART_CLEARANCE_CAPSULES = "joint_1-joint_2:0.12,joint_2-joint_3:0.10,joint_3-joint_3:0.13,joint_3-joint_5:0.09,joint_5-joint_6:0.08"
+PART_CLEARANCE_M = 0.03
+PART_CLEARANCE_WEIGHT = 0.0
+PART_CLEARANCE_VOXEL_M = 0.03
+PART_CLEARANCE_MAX_POINTS = 120
+# 팔꿈치 높이 상한: 부품에서 팔꿈치를 떼면 위로 올라가 갠트리 브리지 빔(x7y4z3 하면 2.89 m)에 상완이 닿는다.
+# 지정 관절 원점 z 가 이 값을 넘지 않게 하는 소프트 페널티 (가중치는 --part-clearance-weight 공유). 0 = 끔.
+ARM_Z_MAX = 0.0
+ARM_Z_MAX_JOINTS = "joint_3"
+# 툴-팔 자기 간섭: TCP 프레임 점들(스프레이건 몸체)이 지정 캡슐(상완 등)과 r + margin 이상 떨어지게 (가중치 공유). "" = 끔.
+SELF_CLEARANCE_POINTS = ""
+SELF_CLEARANCE_CAPSULES = "joint_2-joint_3:0.10"
+SELF_CLEARANCE_M = 0.08
+# 자세 조건 완화 (기본 = 종전과 동일: 3축 자세 1° 고정).
+#  --orientation-mode spray-axis : 분사축 방향만 맞추고 분사축 둘레 롤은 자유 (원형 분사 노즐 가정).
+#  --spray-cone-deg A            : 분사축이 목표(표면 법선 방향)에서 A° 까지 기울어도 된다. 이때 위치 제약은 TCP 가 아니라
+#                                  표면 조준점(TCP + standoff * 분사축)에 건다 — 노즐을 기울여도 같은 표면 점을 맞춘다.
+# 천장 장착 팔이 세운 부품 하단 row 를 수평 분사로 못 내려가던 문제(TCP 최저 1.63 m, 롤 자유 1.43 m) 용 (2026-11-10).
+ORIENTATION_MODE = "full"
+SPRAY_CONE_DEG = 0.0
+SPRAY_STANDOFF_M = 0.15
+SPRAY_CONE_WEIGHT = 1.0
+# 완화 모드에서 롤을 경로 자세 쪽으로 약하게 끄는 비용 (1 - 3축 자세 cos). 0 = 완전 자유 → row 마다 손목이 다른 분기로 가
+# 전이가 수백 초로 터졌다(z1.7 row 16 끝 joint_1 -214° → row 17 시작 66°).
+ROLL_WEIGHT = 0.0
+# 여러 row 를 한 호출로 풀 때 row 첫 노드를 직전 row 끝 관절값에 붙이는 비용 (rad^2, m^2 그대로). 0 = 끔.
+START_CONTINUITY_WEIGHT = 0.0
 AUTO = "auto"
 
 IPOPT_MAX_ITER = 800
@@ -978,6 +1008,54 @@ def build_command_trajectory(
     return command_times, command_arc, q_command, qd_command, qdd_command
 
 
+def parse_part_capsules(text: str) -> list[tuple[str, str, float]]:
+    capsules = []
+    for item in [t.strip() for t in str(text).split(",") if t.strip()]:
+        pair, radius = item.split(":")
+        first, second = pair.split("-")
+        capsules.append((first.strip(), second.strip(), float(radius)))
+    return capsules
+
+
+def voxel_downsample(points: np.ndarray, voxel: float) -> np.ndarray:
+    if voxel <= 0.0 or len(points) == 0:
+        return points
+    keys = np.floor(points / voxel).astype(np.int64)
+    _unique, index = np.unique(keys, axis=0, return_index=True)
+    return points[np.sort(index)]
+
+
+def point_segment_distance_np(points: np.ndarray, a: np.ndarray, b: np.ndarray) -> np.ndarray:
+    ab = b - a
+    denom = float(ab @ ab)
+    if denom < 1.0e-12:
+        return np.linalg.norm(points - a, axis=1)
+    t = np.clip((points - a) @ ab / denom, 0.0, 1.0)
+    return np.linalg.norm(points - (a + t[:, None] * ab), axis=1)
+
+
+def capsule_endpoints_function(model: "KinematicModel", capsules):
+    q = ca.MX.sym("q", model.nq)
+    _p, _r, _j, origins = model.fk_symbolic_full(q)
+    outs = []
+    for first, second, _radius in capsules:
+        outs += [origins[first], origins[second]]
+    return ca.Function("capsule_endpoints", [q], outs)
+
+
+def min_part_clearance(model: "KinematicModel", q_rows: np.ndarray, part_points: np.ndarray, capsules) -> tuple[float, int]:
+    """궤적 전체에서 (캡슐 표면 - 부품점) 최소 거리와 그 노드."""
+    fun = capsule_endpoints_function(model, capsules)
+    best, best_index = math.inf, -1
+    for index, q in enumerate(q_rows):
+        ends = [np.asarray(e, dtype=float).reshape(3) for e in fun(q)]
+        for c, (_f, _s, radius) in enumerate(capsules):
+            d = float(point_segment_distance_np(part_points, ends[2 * c], ends[2 * c + 1]).min()) - radius
+            if d < best:
+                best, best_index = d, index
+    return best, best_index
+
+
 def optimize_trajectory(
     model: KinematicModel,
     points: list[TaskPoint],
@@ -1026,6 +1104,38 @@ def optimize_trajectory(
             raise ValueError(f"--tool-clearance-joints: unknown joints {unknown} (have {model.joint_names})")
         clearance_sq = float(args.tool_clearance_m) ** 2
 
+    spray_index, spray_sign = parse_signed_axis(args.tcp_spray_axis)
+    spray_cone = math.radians(float(args.spray_cone_deg))
+    spray_standoff = float(args.spray_standoff_m)
+    relaxed_orientation = args.orientation_mode != "full" or spray_cone > 0.0
+    if relaxed_orientation:
+        print(f"[nlp] orientation relaxed: mode={args.orientation_mode} spray cone {args.spray_cone_deg} deg "
+              f"(standoff {spray_standoff} m, aim-point position constraint={spray_cone > 0.0})")
+
+    part_clearance_weight = float(getattr(args, "part_clearance_weight", 0.0))
+    part_points_all = getattr(args, "_part_points", None)
+    node_part_points = None
+    if part_clearance_weight > 0.0 and part_points_all is not None and len(part_points_all):
+        capsules = parse_part_capsules(args.part_clearance_capsules)
+        unknown = [n for c in capsules for n in c[:2] if n not in model.joint_names]
+        if unknown:
+            raise ValueError(f"--part-clearance-capsules: unknown joints {unknown}")
+        ends_fun = capsule_endpoints_function(model, capsules)
+        reach = max(r for *_n, r in capsules) + float(args.part_clearance_m) + 0.30
+        node_part_points = []
+        for index in range(count):
+            ends = [np.asarray(e, dtype=float).reshape(3) for e in ends_fun(seed[index])]
+            dist = np.full(len(part_points_all), np.inf)
+            for c in range(len(capsules)):
+                dist = np.minimum(dist, point_segment_distance_np(part_points_all, ends[2 * c], ends[2 * c + 1]))
+            near = np.where(dist < reach)[0]
+            if len(near) > args.part_clearance_max_points:
+                near = near[np.argsort(dist[near])[: args.part_clearance_max_points]]
+            node_part_points.append(part_points_all[near])
+        used = sum(len(p) for p in node_part_points)
+        print(f"[nlp] part clearance: {len(capsules)} capsules, margin {args.part_clearance_m} m, "
+              f"weight {part_clearance_weight:g}, near points {used} (nodes {count})")
+
     for index, point in enumerate(points):
         qk = q_var[:, index]
         position, rotation, jacobian, joint_origins = model.fk_symbolic_full(qk)
@@ -1035,8 +1145,27 @@ def optimize_trajectory(
         orientation_cost = 1.0 - orientation_cos
 
         opti.subject_to(opti.bounded(q_lower, qk, q_upper))
-        opti.subject_to(opti.bounded(-position_tol, pos_err, position_tol))
-        opti.subject_to(orientation_cos >= orientation_min_cos)
+        if relaxed_orientation:
+            spray_now = spray_sign * rotation[:, spray_index]
+            spray_goal = ca.DM(spray_sign * point.rotation[:, spray_index].reshape(3, 1))
+            spray_cos = ca.dot(spray_now, spray_goal)
+            if spray_cone > 0.0:
+                aim_err = (position + spray_standoff * spray_now) - (ca.DM(point.position.reshape(3, 1)) + spray_standoff * spray_goal)
+                opti.subject_to(opti.bounded(-position_tol, aim_err, position_tol))
+                pos_err = aim_err
+            else:
+                opti.subject_to(opti.bounded(-position_tol, pos_err, position_tol))
+            if args.orientation_mode == "spray-axis":
+                opti.subject_to(spray_cos >= math.cos(orientation_tol + spray_cone))
+                orientation_cost = 1.0 - spray_cos
+            else:
+                opti.subject_to(orientation_cos >= math.cos(orientation_tol + spray_cone))
+            objective += float(args.spray_cone_weight) * (1.0 - spray_cos)
+            if float(args.roll_weight) > 0.0:
+                objective += float(args.roll_weight) * (1.0 - orientation_cos)
+        else:
+            opti.subject_to(opti.bounded(-position_tol, pos_err, position_tol))
+            opti.subject_to(orientation_cos >= orientation_min_cos)
 
         objective += args.position_weight * ca.sumsqr(pos_err)
         objective += args.orientation_weight * orientation_cost
@@ -1049,6 +1178,45 @@ def optimize_trajectory(
                 gap = clearance_sq - ca.sumsqr(tool_tip - joint_origins[name])
                 violation = 0.5 * (gap + ca.sqrt(gap * gap + 1.0e-6))
                 objective += tool_clearance_weight * violation ** 2
+
+        if node_part_points is not None and str(args.self_clearance_points).strip():
+            for text in [t for t in str(args.self_clearance_points).split(";") if t.strip()]:
+                tool_point = position + rotation @ ca.DM(np.asarray(parse_float_list(text, 3, "--self-clearance-points")).reshape(3, 1))
+                for first, second, radius in parse_part_capsules(args.self_clearance_capsules):
+                    a = joint_origins[first]
+                    ab = joint_origins[second] - a
+                    t = ca.fmin(ca.fmax(ca.dot(ab, tool_point - a) / (ca.sumsqr(ab) + 1.0e-9), 0.0), 1.0)
+                    d2 = ca.sumsqr(tool_point - a - t * ab)
+                    limit = radius + float(args.self_clearance_m)
+                    gap = limit * limit - d2
+                    violation = 0.5 * (gap + ca.sqrt(gap * gap + 1.0e-8))
+                    objective += part_clearance_weight * violation ** 2
+
+        if node_part_points is not None and float(args.arm_z_max) > 0.0:
+            for name in [n.strip() for n in args.arm_z_max_joints.split(",") if n.strip()]:
+                gap = joint_origins[name][2] - float(args.arm_z_max)
+                violation = 0.5 * (gap + ca.sqrt(gap * gap + 1.0e-8))
+                objective += part_clearance_weight * violation ** 2
+
+        if node_part_points is not None and len(node_part_points[index]):
+            pts = ca.DM(node_part_points[index].T)               # 3 x M
+            m = pts.shape[1]
+            for first, second, radius in capsules:
+                a = joint_origins[first]
+                b = joint_origins[second]
+                ab = b - a
+                rel = pts - ca.repmat(a, 1, m)
+                if first == second:
+                    closest_rel = rel
+                else:
+                    t = ca.mtimes(ab.T, rel) / (ca.sumsqr(ab) + 1.0e-9)
+                    t = ca.fmin(ca.fmax(t, 0.0), 1.0)
+                    closest_rel = rel - ca.mtimes(ab, t)
+                d2 = ca.sum1(closest_rel ** 2)                    # 1 x M
+                limit = radius + float(args.part_clearance_m)
+                gap = limit * limit - d2
+                violation = 0.5 * (gap + ca.sqrt(gap * gap + 1.0e-8))
+                objective += part_clearance_weight * ca.sumsqr(violation)
 
         if args.singularity_weight > 0.0:
             gram = jacobian @ jacobian.T
@@ -1093,6 +1261,9 @@ def optimize_trajectory(
             gantry_acceleration = ca.vertcat(*[acceleration[i] / a_limit_dm[i] for i in gantry_columns])
             objective += gantry_acceleration_weight * ca.sumsqr(gantry_acceleration)
 
+    previous_end = getattr(args, "_previous_end_q", None)
+    if previous_end is not None and float(args.start_continuity_weight) > 0.0:
+        objective += float(args.start_continuity_weight) * ca.sumsqr(q_var[:, 0] - ca.DM(previous_end.reshape(nq, 1)))
     opti.minimize(objective)
     opti.set_initial(q_var, seed.T)
     opti.solver(
@@ -1402,6 +1573,32 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
                         help='Tool tip point in the TCP frame, "x,y,z" [m]. Default = paint cup end of the spray gun.')
     parser.add_argument("--tool-clearance-joints", default=TOOL_CLEARANCE_JOINTS,
                         help="Comma-separated joint names whose origins the tool tip must clear (joint_3 = elbow, joint_5 = wrist).")
+    parser.add_argument("--part-file", type=Path, default=None,
+                        help="부품 점군(PLY/CSV, 경로 CSV 좌표계). --part-xyz/--part-rpy 로 같이 배치된다.")
+    parser.add_argument("--part-clearance-weight", type=float, default=PART_CLEARANCE_WEIGHT,
+                        help="팔 캡슐-부품 간섭 소프트 페널티 가중치 (0 = 끔)")
+    parser.add_argument("--part-clearance-m", type=float, default=PART_CLEARANCE_M)
+    parser.add_argument("--part-clearance-capsules", default=PART_CLEARANCE_CAPSULES)
+    parser.add_argument("--part-clearance-voxel", type=float, default=PART_CLEARANCE_VOXEL_M)
+    parser.add_argument("--part-clearance-max-points", type=int, default=PART_CLEARANCE_MAX_POINTS)
+    parser.add_argument("--arm-z-max", type=float, default=ARM_Z_MAX,
+                        help="지정 관절 원점 월드 z 상한 소프트 페널티 [m] (부품 간섭 항과 함께만 동작, 0 = 끔)")
+    parser.add_argument("--arm-z-max-joints", default=ARM_Z_MAX_JOINTS)
+    parser.add_argument("--self-clearance-points", default=SELF_CLEARANCE_POINTS,
+                        help="TCP 프레임 점 'x,y,z;x,y,z' — 스프레이건 몸체. 부품 간섭 항과 함께만 동작")
+    parser.add_argument("--self-clearance-capsules", default=SELF_CLEARANCE_CAPSULES)
+    parser.add_argument("--self-clearance-m", type=float, default=SELF_CLEARANCE_M)
+    parser.add_argument("--orientation-mode", choices=("full", "spray-axis"), default=ORIENTATION_MODE,
+                        help="full = 3축 자세 고정(종전), spray-axis = 분사축만 맞추고 롤 자유")
+    parser.add_argument("--spray-cone-deg", type=float, default=SPRAY_CONE_DEG,
+                        help="분사축 기울기 허용 [deg]. >0 이면 위치 제약을 표면 조준점에 건다")
+    parser.add_argument("--roll-weight", type=float, default=ROLL_WEIGHT,
+                        help="완화 모드에서 3축 자세(롤 포함)를 경로 쪽으로 끄는 비용 가중치")
+    parser.add_argument("--start-continuity-weight", type=float, default=START_CONTINUITY_WEIGHT,
+                        help="row 첫 노드를 직전 row 끝 관절값에 붙이는 비용 가중치")
+    parser.add_argument("--spray-standoff-m", type=float, default=SPRAY_STANDOFF_M)
+    parser.add_argument("--spray-cone-weight", type=float, default=SPRAY_CONE_WEIGHT,
+                        help="분사축을 목표 방향으로 되돌리는 비용 가중치 (완화 모드에서만)")
     parser.add_argument("--ipopt-max-iter", type=int, default=IPOPT_MAX_ITER)
     parser.add_argument("--ipopt-tol", type=float, default=IPOPT_TOL)
     parser.add_argument("--ipopt-print-level", type=int, default=IPOPT_PRINT_LEVEL)
@@ -1523,6 +1720,15 @@ def main(argv: list[str] | None = None) -> int:
     print(f"[nlp] prismatic joints: {int(np.sum(model.prismatic))} of {model.nq}")
     print(f"[nlp] TCP spray axis: {args.tcp_spray_axis} path axis: {args.tcp_path_axis}")
     print(f"[nlp] part placement xyz={part_translation.tolist()} rpy={part_rpy}")
+    args._part_points = None
+    if float(args.part_clearance_weight) > 0.0 or args.part_file:
+        if not args.part_file:
+            raise ValueError("--part-clearance-weight > 0 needs --part-file")
+        from motion_planner.ply_io import read_surface_points
+        raw = np.asarray(read_surface_points(str(args.part_file))[0], dtype=float)
+        world = (part_rotation @ raw.T).T + part_translation
+        args._part_points = voxel_downsample(world, float(args.part_clearance_voxel))
+        print(f"[nlp] part cloud: {args.part_file} {len(raw)} -> {len(args._part_points)} pts (voxel {args.part_clearance_voxel} m)")
     print(f"[nlp] output: {args.output}")
 
     v_limit, a_limit = model.motion_limits(args)
@@ -1551,6 +1757,10 @@ def main(argv: list[str] | None = None) -> int:
         seed_elapsed = time.perf_counter() - seed_start
         nlp_start = time.perf_counter()
         q_solution = optimize_trajectory(model, points, seed, args)
+        if args._part_points is not None:
+            clearance, at = min_part_clearance(model, q_solution, args._part_points,
+                                               parse_part_capsules(args.part_clearance_capsules))
+            print(f"[nlp] part clearance (capsule model) min {clearance * 1000:.1f} mm at node {at}")
         nlp_elapsed = time.perf_counter() - nlp_start
         timing_rows.append((input_csv.name, len(points), seed_elapsed, nlp_elapsed, points[-1].t))
         print(
@@ -1560,6 +1770,7 @@ def main(argv: list[str] | None = None) -> int:
             f"path duration {points[-1].t:.2f}s"
         )
         seed_initial_q = q_solution[-1].copy()
+        args._previous_end_q = q_solution[-1].copy()
         metrics = evaluate_solution(model, points, q_solution, args)
         times = np.array([point.t for point in points], dtype=float)
         arc_lengths = np.array([point.s for point in points], dtype=float)
