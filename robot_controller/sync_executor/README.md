@@ -67,7 +67,7 @@ cmake --build robot_controller/sync_executor/build -j
 - 실시간 권한: 1 ms 루프는 `SCHED_FIFO` + `mlockall` 을 쓴다. 권한이 없으면 경고만 내고 일반 스케줄로 돈다 (지터 커짐).
   `/etc/security/limits.conf` 에 `<user> - rtprio 99`, `<user> - memlock unlimited` 를 넣고 재로그인하거나 `sudo` 로 실행.
 - 네트워크: 로봇 제어기 기본 `192.168.137.100` (`--robot-ip`), XMC 는 `--plc-ip`. 같은 서브넷에 있어야 한다.
-- 입력 궤적: 플래너 결과 `motion_planning/log/<run>/transition/seq_*_joint.csv` 와 검증용 URDF(`tcp` 프레임이 있는 t90 8축 URDF)가 필요하다.
+- 입력 궤적: 플래너 결과 `motion_planning/log/<run>/transition/seq_*_joint.csv` 와 검증용 URDF `description/paint_cell/urdf/paint_cell_8axis_x7y4z3_t90.urdf` (`tcp` 프레임) 가 필요하다.
 
 ## 사용
 
@@ -81,7 +81,7 @@ build/sync_executor --motion /tmp/door_motion.csv --no-sleep --log /tmp/log.csv
 
 # 3) 검증
 python scripts/verify_sync.py --motion /tmp/door_motion.csv --log /tmp/log.csv \
-    --urdf <paint_cell_8axis_x7y4z3_t90.urdf> --plot /tmp/log.png
+    --urdf ../../description/paint_cell/urdf/paint_cell_8axis_x7y4z3_t90.urdf --robot-lead-ticks 0 --gantry-lead-ticks 0 --plot /tmp/log.png
 ```
 
 ## 제어식
